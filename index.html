@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="cache-version" content="2026-10-02-fsid-removed-v2">
+  <meta name="cache-version" content="2026-10-02-browserless-v1">
   <title>TerDowngh — Terabox Direct Downloader</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -46,7 +46,7 @@
         <div id="loading" class="hidden fade mt-6 text-center py-5">
           <div class="mx-auto w-10 h-10 rounded-full border-4 border-slate-200 border-t-indigo-600 spin"></div>
           <p class="mt-4 text-sm font-medium text-slate-700">Mengambil link download...</p>
-          <p id="loadingText" class="mt-1 text-xs text-slate-400">Browser cloud sedang memproses link. Mohon tunggu.</p>
+          <p id="loadingText" class="mt-1 text-xs text-slate-400">Browserless sedang membuka dan memproses share link.</p>
           <p id="elapsedText" class="mt-2 text-[11px] text-slate-400">0 detik</p>
         </div>
 
@@ -95,10 +95,10 @@
       loadingTimer = setInterval(() => {
         const seconds = Math.floor((Date.now() - loadingStartedAt) / 1000);
         elapsedText.textContent = `${seconds} detik`;
-        if (seconds >= 20) {
-          loadingText.textContent = 'Masih diproses oleh browser cloud. Jangan tutup halaman.';
+        if (seconds >= 15) {
+          loadingText.textContent = 'Masih diproses oleh Browserless. Jangan tutup halaman.';
         }
-        if (seconds >= 45) {
+        if (seconds >= 30) {
           loadingText.textContent = 'Terabox membutuhkan waktu lebih lama dari biasanya. Tetap menunggu...';
         }
       }, 1000);
@@ -154,7 +154,6 @@
         dlink.value = data.dlink;
         downloadBtn.href = data.dlink;
         setLoading(false);
-        loading.classList.add('hidden');
         result.classList.remove('hidden');
         submitBtn.disabled = false;
         btnLabel.textContent = 'Dapatkan Link';
