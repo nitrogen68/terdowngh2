@@ -148,6 +148,15 @@ def _try_public_fallbacks(share_url: str):
     return None
 
 
+
+def _clean_browserless_error(msg):
+    """Rapikan pesan error Browserless (buang embel-embel stack & requestId)."""
+    msg = str(msg or "")
+    msg = re.sub(r"\s*\(requestId:[^)]*\)\s*$", "", msg)
+    msg = re.sub(r"\s+default\s*\(https?://[^)]*\)", "", msg)
+    return msg.strip() or "browserless gagal tanpa pesan"
+
+
 async def get_terabox_dlink(share_url: str) -> dict:
     client = BrowserlessClient()
     ndus = (os.environ.get("TERABOX_NDUS") or "").strip()
@@ -390,12 +399,12 @@ async def get_terabox_dlink(share_url: str) -> dict:
         fb = _try_public_fallbacks(share_url)
         if fb and fb.get("success"):
             return fb
-        return {"success": False, "error": f"Browserless error: {exc}"}
+        return {"success": False, "error": f"Browserless error: {_clean_browserless_error(exc)}"}
     if result.get("error"):
         fb = _try_public_fallbacks(share_url)
         if fb and fb.get("success"):
             return fb
-        return {"success": False, "error": f"Browserless error: {result.get('error')}"}
+        return {"success": False, "error": f"Browserless error: {_clean_browserless_error(result.get('error'))}"}
     files = _extract_files(result)
     dlink = _extract_dlink(result)
     if files:
