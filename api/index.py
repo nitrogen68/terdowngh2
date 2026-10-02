@@ -104,6 +104,8 @@ class Handler(BaseHTTPRequestHandler):
             payload["filename"] = result["filename"]
         if result.get("files"):
             payload["files"] = result["files"]
+        if "ndus_cookie_ok" in result:
+            payload["ndus_cookie_ok"] = result["ndus_cookie_ok"]
 
         self._json(payload)
 
