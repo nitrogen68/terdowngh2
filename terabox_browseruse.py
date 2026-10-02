@@ -97,8 +97,10 @@ def _extract_files(value):
                     if isinstance(th, dict):
                         cand = th.get("url3") or th.get("url2") or th.get("url1")
                         thumb = cand if isinstance(cand, str) else None
+                ld = obj.get("listDlink")
                 files.append({"filename": name, "size": size, "dlink": dlink,
-                              "thumb": thumb if isinstance(thumb, str) else None})
+                              "thumb": thumb if isinstance(thumb, str) else None,
+                              "list_dlink": ld if isinstance(ld, str) else None})
             for v in obj.values():
                 walk(v)
         elif isinstance(obj, list):
@@ -438,13 +440,14 @@ async def get_terabox_dlink(share_url: str) -> dict:
       for (const file of files.slice(0, 10)) {
         const fsId = file.fs_id;
         if (!fsId) continue;
-        if (typeof file.dlink === "string" && file.dlink.startsWith("http")) {
-          results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink: file.dlink, thumb: pickThumb(file) });
-          continue;
-        }
-        let dlink = await tryShareDownload(fsId);
-        if (!dlink) for (const dr of captured.downloadResponses) { dlink = extractDlinkFromPayload(dr.data, fsId); if (dlink) break; }
-        if (dlink) results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file) });
+        const listDlink = (typeof file.dlink === "string" && file.dlink.startsWith("http")) ? file.dlink : null;
+        let dlDlink = await tryShareDownload(fsId);
+        if (!dlDlink) for (const dr of captured.downloadResponses) { dlDlink = extractDlinkFromPayload(dr.data, fsId); if (dlDlink) break; }
+        const dlink = dlDlink || listDlink;
+        if (!dlink) continue;
+        const entry = { filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file) };
+        if (results.length === 0 && dlDlink && listDlink && dlDlink !== listDlink) entry.listDlink = listDlink;
+        results.push(entry);
       }
       if (!results.length) throw new Error("Terabox API selesai tetapi dlink kosong. debug=" + JSON.stringify(debugLog).slice(0, 900));
       let dlinkProbe = null;
