@@ -71,135 +71,152 @@ def _extract_dlink(value):
 
 
 async def get_terabox_dlink(share_url: str) -> dict:
-    """Resolve a public Terabox share URL using Browserless + Terabox share APIs.
-
-    The browser is used to obtain the current jsToken and session context. The
-    actual file metadata and download URL are then requested through Terabox's
-    own share endpoints from inside the same browser session. This is much more
-    reliable than waiting for a DOM Download button or guessing CDN hostnames.
-    """
+    """Resolve a public Terabox share URL using Browserless Function API."""
     client = BrowserlessClient()
-    safe_url = json.dumps(share_url)
 
-    code = f'''export default async ({{ page }}) => {{
-      const shareUrl = {safe_url};
+    # IMPORTANT: do not use a Python f-string for the JavaScript below.
+    # JavaScript object literals also contain braces and can accidentally be
+    # interpreted by Python as f-string expressions (for example app_id).
+    # A plain template plus one explicit placeholder avoids that entire class
+    # of runtime errors.
+    safe_url = json.dumps(share_url)
+    code = r'''export default async ({ page }) => {
+      const shareUrl = __SHARE_URL__;
       let jsToken = null;
       let dpLogId = null;
 
-      const rememberRequest = (url) => {{
-        try {{
+      const rememberRequest = (url) => {
+        try {
           const parsed = new URL(url);
           const token = parsed.searchParams.get("jsToken");
           const logid = parsed.searchParams.get("dp-logid");
           if (token) jsToken = token;
           if (logid) dpLogId = logid;
-        }} catch (_) {{}}
-      }};
+        } catch (_) {}
+      };
 
       page.on("request", request => rememberRequest(request.url()));
       page.on("response", response => rememberRequest(response.url()));
 
-      await page.goto(shareUrl, {{
+      await page.goto(shareUrl, {
         waitUntil: "domcontentloaded",
         timeout: 30000
-      }});
+      });
 
-      // Allow the share application to initialise and issue its normal API
-      // requests. We capture jsToken/dp-logid from those requests.
-      await new Promise(resolve => setTimeout(resolve, 1800));
+      await new Promise(resolve => setTimeout(resolve, 2200));
 
       const html = await page.content();
       const tokenPatterns = [
         /[?&]jsToken=([A-Za-z0-9_-]+)/i,
-        /["']jsToken["']\\s*[:=]\\s*["']([^"']+)["']/i,
-        /jsToken\\s*=\\s*["']([^"']+)["']/i
+        /["']jsToken["']\s*[:=]\s*["']([^"']+)["']/i,
+        /jsToken\s*=\s*["']([^"']+)["']/i
       ];
 
-      if (!jsToken) {{
-        for (const pattern of tokenPatterns) {{
+      if (!jsToken) {
+        for (const pattern of tokenPatterns) {
           const match = html.match(pattern);
-          if (match) {{ jsToken = match[1]; break; }}
-        }}
-      }}
+          if (match) {
+            jsToken = match[1];
+            break;
+          }
+        }
+      }
 
-      // Resource URLs are another reliable source when the token is not
-      // embedded directly in the HTML.
-      if (!jsToken) {{
+      if (!jsToken) {
         const resources = await page.evaluate(() =>
           performance.getEntriesByType("resource").map(entry => entry.name)
         );
-        for (const resource of resources) {{
+        for (const resource of resources) {
           rememberRequest(resource);
           if (jsToken) break;
-        }}
-      }}
+        }
+      }
 
+      const original = new URL(shareUrl);
       const current = new URL(page.url());
-      const pathParts = current.pathname.split("/").filter(Boolean);
-      let surl = null;
-      const sIndex = pathParts.findIndex(part => part.toLowerCase() === "s");
-      if (sIndex >= 0 && pathParts[sIndex + 1]) surl = pathParts[sIndex + 1];
-      if (!surl) surl = current.searchParams.get("surl");
-      if (!surl) {{
-        const original = new URL(shareUrl);
-        const originalParts = original.pathname.split("/").filter(Boolean);
-        const originalIndex = originalParts.findIndex(part => part.toLowerCase() === "s");
-        if (originalIndex >= 0 && originalParts[originalIndex + 1]) surl = originalParts[originalIndex + 1];
-        if (!surl) surl = original.searchParams.get("surl");
-      }}
+
+      const getSurl = (url) => {
+        const parts = url.pathname.split("/").filter(Boolean);
+        const index = parts.findIndex(part => part.toLowerCase() === "s");
+        if (index >= 0 && parts[index + 1]) return parts[index + 1];
+        return url.searchParams.get("surl");
+      };
+
+      const surl = getSurl(current) || getSurl(original);
 
       if (!jsToken) throw new Error("jsToken Terabox tidak ditemukan");
       if (!surl) throw new Error("Kode share Terabox tidak ditemukan");
 
-      if (!dpLogId) dpLogId = String(Date.now()) + String(Math.floor(Math.random() * 9000 + 1000));
+      if (!dpLogId) {
+        dpLogId = String(Date.now()) + String(Math.floor(Math.random() * 9000 + 1000));
+      }
 
       const common = new URLSearchParams({
         app_id: "250528",
         web: "1",
         channel: "dubox",
         clienttype: "0",
-        jsToken,
+        jsToken: jsToken,
         "dp-logid": dpLogId
       });
 
-      // Step 1: obtain share metadata. This response contains shareid, uk,
-      // sign, timestamp and the file list including fs_id.
       const infoUrl = new URL("/api/shorturlinfo", location.origin);
-      for (const [key, value] of common) infoUrl.searchParams.set(key, value);
+      for (const [key, value] of common.entries()) {
+        infoUrl.searchParams.set(key, value);
+      }
       infoUrl.searchParams.set("shorturl", surl);
       infoUrl.searchParams.set("root", "1");
       infoUrl.searchParams.set("scene", "");
 
-      const infoResponse = await fetch(infoUrl.toString(), {{
+      const infoResponse = await fetch(infoUrl.toString(), {
         credentials: "include",
-        headers: {{ "Accept": "application/json, text/plain, */*" }}
-      }});
+        headers: {
+          "Accept": "application/json, text/plain, */*",
+          "Referer": shareUrl
+        }
+      });
+
       const infoText = await infoResponse.text();
       let info;
-      try {{ info = JSON.parse(infoText); }} catch (_) {{
+      try {
+        info = JSON.parse(infoText);
+      } catch (_) {
         throw new Error("Terabox shorturlinfo bukan JSON");
-      }}
+      }
 
-      if (!infoResponse.ok || Number(info.errno) !== 0) {{
-        throw new Error(`Terabox metadata gagal (HTTP ${{infoResponse.status}}, errno ${{info.errno ?? "?"}}): ${{info.show_msg || "unknown"}}`);
-      }}
+      if (!infoResponse.ok || Number(info.errno) !== 0) {
+        throw new Error(
+          "Terabox metadata gagal (HTTP " +
+          infoResponse.status +
+          ", errno " +
+          (info.errno ?? "?") +
+          "): " +
+          (info.show_msg || "unknown")
+        );
+      }
 
       const list = Array.isArray(info.list) ? info.list : [];
       const file = list.find(item => Number(item?.isdir || 0) === 0) || list[0];
-      if (!file || !file.fs_id) throw new Error("File pada share Terabox tidak ditemukan");
+
+      if (!file || !file.fs_id) {
+        throw new Error("File pada share Terabox tidak ditemukan");
+      }
 
       const shareId = info.shareid ?? info.share_id ?? file.shareid;
       const uk = info.uk ?? info.share_uk ?? file.uk;
       const sign = info.sign;
       const timestamp = info.timestamp;
 
-      if (!shareId || !uk || !sign || !timestamp) {{
-        throw new Error("Metadata download Terabox tidak lengkap (shareid/uk/sign/timestamp)");
-      }}
+      if (!shareId || !uk || !sign || !timestamp) {
+        throw new Error(
+          "Metadata download Terabox tidak lengkap (shareid/uk/sign/timestamp)"
+        );
+      }
 
-      // Step 2: ask Terabox for the actual dlink using the metadata above.
       const downloadUrl = new URL("/share/download", location.origin);
-      for (const [key, value] of common) downloadUrl.searchParams.set(key, value);
+      for (const [key, value] of common.entries()) {
+        downloadUrl.searchParams.set(key, value);
+      }
       downloadUrl.searchParams.set("shareid", String(shareId));
       downloadUrl.searchParams.set("sign", String(sign));
       downloadUrl.searchParams.set("timestamp", String(timestamp));
@@ -212,43 +229,56 @@ async def get_terabox_dlink(share_url: str) -> dict:
         primaryid: String(shareId)
       });
 
-      const downloadResponse = await fetch(downloadUrl.toString(), {{
+      const downloadResponse = await fetch(downloadUrl.toString(), {
         method: "POST",
         credentials: "include",
-        headers: {{
+        headers: {
           "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "Accept": "application/json, text/plain, */*"
-        }},
+          "Accept": "application/json, text/plain, */*",
+          "Referer": shareUrl
+        },
         body: body.toString()
-      }});
+      });
 
       const downloadText = await downloadResponse.text();
       let downloadData;
-      try {{ downloadData = JSON.parse(downloadText); }} catch (_) {{
+      try {
+        downloadData = JSON.parse(downloadText);
+      } catch (_) {
         throw new Error("Terabox share/download bukan JSON");
-      }}
+      }
 
-      if (!downloadResponse.ok || Number(downloadData.errno) !== 0) {{
-        throw new Error(`Terabox download API gagal (HTTP ${{downloadResponse.status}}, errno ${{downloadData.errno ?? "?"}}): ${{downloadData.show_msg || "unknown"}}`);
-      }}
+      if (!downloadResponse.ok || Number(downloadData.errno) !== 0) {
+        throw new Error(
+          "Terabox download API gagal (HTTP " +
+          downloadResponse.status +
+          ", errno " +
+          (downloadData.errno ?? "?") +
+          "): " +
+          (downloadData.show_msg || "unknown")
+        );
+      }
 
       const returned = Array.isArray(downloadData.list) ? downloadData.list : [];
-      const returnedFile = returned.find(item => String(item.fs_id) === String(file.fs_id)) || returned[0];
+      const returnedFile =
+        returned.find(item => String(item.fs_id) === String(file.fs_id)) ||
+        returned[0];
       const dlink = returnedFile?.dlink || downloadData.dlink || file.dlink;
 
-      if (!dlink) throw new Error("Terabox API selesai tetapi dlink kosong");
+      if (!dlink) {
+        throw new Error("Terabox API selesai tetapi dlink kosong");
+      }
 
-      return {{
-        data: {{
-          dlink,
-          filename: file.server_filename || file.filename || "",
-          fs_id: String(file.fs_id),
-          shareid: String(shareId),
-          uk: String(uk)
-        }},
+      return {
+        data: {
+          dlink: dlink,
+          filename: file.server_filename || file.filename || ""
+        },
         type: "application/json"
-      }};
-    }};'''
+      };
+    };'''
+
+    code = code.replace("__SHARE_URL__", safe_url)
 
     result = client._post_function(code, timeout_ms=90000)
     if result.get("error"):
