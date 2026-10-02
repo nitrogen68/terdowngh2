@@ -304,21 +304,31 @@ async def get_terabox_dlink(share_url: str) -> dict:
       const files = fileList.filter(item => Number(item?.isdir || 0) === 0);
       if (!files.length && fileList.length) files.push(fileList[0]);
       if (!files.length) throw new Error("Tidak ada file di share");
-      // Refresh paksa: sign/timestamp/sekey dari intersep bisa basi sehingga
-      // dlink yang dihasilkan langsung ditolak CDN (403). Ambil yang fresh.
-      try {
-        if (captured.jsToken && surl) {
-          const freshUrl = new URL("/api/shorturlinfo", origin);
-          const fp = commonParams();
-          fp.set("shorturl", surl); fp.set("root", "1"); fp.set("scene", "");
-          fp.set("_t", String(Date.now()));
-          for (const [k, v] of fp.entries()) freshUrl.searchParams.set(k, v);
-          const fres = await pageFetchJson(freshUrl.toString(), { headers: { "Referer": currentUrl || shareUrl }, cache: "no-store" });
-          if (fres && fres.data && !fres.nonJson && Number(fres.data.errno) === 0) {
-            info = fres.data;
+      // Pastikan timestamp FRESH: server Terabox kadang mengembalikan timestamp
+      // basi (~1 jam). Sign terikat EXACT pada nilai timestamp tersebut, jadi
+      // ulangi fetch hingga dapat yang fresh, lalu pakai nilai persis itu.
+      const tsIsFresh = (ts) => {
+        const n = Number(ts);
+        return !!n && Math.abs(n - Math.floor(Date.now() / 1000)) < 300;
+      };
+      if (captured.jsToken && surl && !tsIsFresh(info && info.timestamp)) {
+        for (let attempt = 0; attempt < 3 && !tsIsFresh(info && info.timestamp); attempt++) {
+          try {
+            const freshUrl = new URL("/api/shorturlinfo", origin);
+            const fp = commonParams();
+            fp.set("shorturl", surl); fp.set("root", "1"); fp.set("scene", "");
+            fp.set("_t", String(Date.now()) + "_" + attempt);
+            for (const [k, v] of fp.entries()) freshUrl.searchParams.set(k, v);
+            const fres = await pageFetchJson(freshUrl.toString(), { headers: { "Referer": currentUrl || shareUrl }, cache: "no-store" });
+            if (fres && fres.data && !fres.nonJson && Number(fres.data.errno) === 0) {
+              info = fres.data;
+            }
+          } catch (_) {}
+          if (!tsIsFresh(info && info.timestamp) && attempt < 2) {
+            await new Promise((r) => setTimeout(r, 1500));
           }
         }
-      } catch (_) {}
+      }
       const shareId = info.shareid ?? info.share_id;
       const uk = info.uk ?? info.share_uk;
       const sign = info.sign;
@@ -345,7 +355,8 @@ async def get_terabox_dlink(share_url: str) -> dict:
       if (!sekey && info?.randsk) { sekey = info.randsk; try { sekey = decodeURIComponent(String(sekey)); } catch (_) {} }
       if (!sekey && listData?.randsk) { sekey = listData.randsk; try { sekey = decodeURIComponent(String(sekey)); } catch (_) {} }
       const results = [];
-      const debugLog = [{ step: "sekey", hasSekey: !!sekey, sekeyLen: sekey ? String(sekey).length : 0, hasNdus: !!injectedNdus }];
+      const debugLog = [{ step: "sekey", hasSekey: !!sekey, sekeyLen: sekey ? String(sekey).length : 0, hasNdus: !!injectedNdus },
+        { step: "tsinfo", infoTs: info && info.timestamp, browserISO: new Date().toISOString() }];
       const extractDlinkFromPayload = (payload, fsId) => {
         if (!payload || typeof payload !== "object") return null;
         if (typeof payload.dlink === "string" && payload.dlink.startsWith("http")) return payload.dlink;
@@ -359,30 +370,13 @@ async def get_terabox_dlink(share_url: str) -> dict:
         }
         return null;
       };
-      // Kandidat timestamp: waktu klien (fresh) dulu, lalu info.timestamp sebagai
-      // fallback. info.timestamp kadang berisi waktu pembuatan share (basi)
-      // sehingga dlink yang dihasilkan langsung kedaluwarsa (dstime < now -> 403).
-      const tsNow = Math.floor(Date.now() / 1000);
-      const tsCandidates = [tsNow];
-      const infoTs = Number(info.timestamp);
-      if (infoTs && Math.abs(infoTs - tsNow) > 120 && !tsCandidates.includes(infoTs)) {
-        tsCandidates.push(infoTs);
-      }
-      const dstimeOf = (dlink) => {
-        try { const m = String(dlink).match(/[?&]dstime=(\d+)/); return m ? parseInt(m[1], 10) : null; }
-        catch (_) { return null; }
-      };
-      const dlinkIsFresh = (dlink) => {
-        const dt = dstimeOf(dlink);
-        return dt === null || dt > tsNow - 300;
-      };
-      debugLog.push({ step: "tsinfo", infoTs: info.timestamp, tsNow: tsNow,
-        browserNow: Date.now(), browserISO: new Date().toISOString() });
-      const tryShareDownload = async (fsId, ts) => {
+      // PENTING: pakai EXACT info.timestamp — sign terikat pada nilai ini.
+      // Mengganti dengan Date.now() membuat signature tidak valid (errno 2).
+      const tryShareDownload = async (fsId) => {
         for (const ep of ["/share/download", "/api/sharedownload"]) {
           const downloadUrl = new URL(ep, origin);
           const params = commonParams();
-          params.set("shareid", String(shareId)); params.set("sign", String(sign)); params.set("timestamp", String(ts));
+          params.set("shareid", String(shareId)); params.set("sign", String(sign)); params.set("timestamp", String(timestamp));
           params.set("uk", String(uk)); params.set("primaryid", String(shareId));
           for (const [k, v] of params.entries()) downloadUrl.searchParams.set(k, v);
           const bases = [
@@ -419,15 +413,7 @@ async def get_terabox_dlink(share_url: str) -> dict:
           results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink: file.dlink, thumb: pickThumb(file) });
           continue;
         }
-        let dlink = null;
-        let staleFallback = null;
-        for (const ts of tsCandidates) {
-          const cand = await tryShareDownload(fsId, ts);
-          if (!cand) continue;
-          if (dlinkIsFresh(cand)) { dlink = cand; break; }
-          if (!staleFallback) staleFallback = cand;
-        }
-        if (!dlink) dlink = staleFallback;
+        let dlink = await tryShareDownload(fsId);
         if (!dlink) for (const dr of captured.downloadResponses) { dlink = extractDlinkFromPayload(dr.data, fsId); if (dlink) break; }
         if (dlink) results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file) });
       }
