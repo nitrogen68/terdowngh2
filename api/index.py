@@ -56,6 +56,12 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/health", "/api/health"):
             self._json({"status": "ok"})
             return
+        if path == "/api/debug":
+            ndus = (os.environ.get("TERABOX_NDUS") or "").strip()
+            if ndus.lower().startswith("ndus="):
+                ndus = ndus.split("=", 1)[1].strip()
+            self._json({"has_ndus": bool(ndus)})
+            return
         self._json({"error": "not found"}, 404)
 
     def do_POST(self):
