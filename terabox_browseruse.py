@@ -451,15 +451,18 @@ async def get_terabox_dlink(share_url: str) -> dict:
       try {
         const probeUrl = results[0] && results[0].dlink;
         if (probeUrl) {
-          dlinkProbe = await page.evaluate(async (u) => {
-            try {
-              const r = await fetch(u, { method: "GET", headers: { "Range": "bytes=0-1023" }, credentials: "include", redirect: "manual" });
-              const t = await r.text().catch(() => "");
-              return { status: r.status, bodyHead: t.slice(0, 120) };
-            } catch (e) { return { error: String(e).slice(0, 120) }; }
-          }, probeUrl);
+          try { await page.setExtraHTTPHeaders({ "Range": "bytes=0-1023" }); } catch (_) {}
+          const resp = await page.goto(probeUrl, { waitUntil: "domcontentloaded", timeout: 25000 }).catch(e => null);
+          try { await page.setExtraHTTPHeaders({}); } catch (_) {}
+          if (resp && typeof resp.status === "function") {
+            let bHead = "";
+            try { bHead = (await resp.text().catch(() => "")).slice(0, 120); } catch (_) {}
+            dlinkProbe = { status: resp.status(), finalUrl: (resp.url() || "").slice(0, 90), bodyHead: bHead };
+          } else {
+            dlinkProbe = { error: "goto_no_response" };
+          }
         }
-      } catch (_) {}
+      } catch (e) { dlinkProbe = { error: String(e && e.message || e).slice(0, 100) }; }
       debugLog.push({ step: "dlink_probe", probe: dlinkProbe });
       return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, ndusCookieOk: !!captured.ndusCookieOk, dlinkProbe }, type: "application/json" };
     };'''
