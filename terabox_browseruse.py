@@ -1,298 +1,133 @@
 import json
-import os
-import re
+import time
 from urllib import request, error
-from urllib.parse import quote
+import os
 
-BROWSERLESS_TOKEN = os.environ.get("BROWSERLESS_TOKEN")
-BROWSERLESS_ENDPOINT = "https://production-sfo.browserless.io/function"
+API_KEY = os.environ.get("BROWSER_USE_API_KEY", "bu_gpCxkLYIQq6MNufjqJsTOAUTRvrzzlEBe8BKzXfZNvE")
+BASE_URL = "https://api.browser-use.com"
 
 
-class BrowserlessClient:
-    def _post_function(self, code: str, timeout_ms: int = 90000):
-        if not BROWSERLESS_TOKEN:
-            raise RuntimeError("BROWSERLESS_TOKEN belum dikonfigurasi")
+class BrowserUseClient:
+    def _headers(self, json_body=False):
+        h = {
+            "X-Browser-Use-API-Key": API_KEY,
+        }
+        if json_body:
+            h["Content-Type"] = "application/json"
+        return h
 
-        endpoint = (
-            f"{BROWSERLESS_ENDPOINT}?token={quote(BROWSERLESS_TOKEN, safe='')}"
-            f"&timeout={timeout_ms}"
-        )
+    def _post(self, path, data_dict):
+        body = json.dumps(data_dict).encode("utf-8")
         req = request.Request(
-            endpoint,
-            data=code.encode("utf-8"),
-            headers={
-                "Content-Type": "application/javascript",
-                "Cache-Control": "no-cache",
-            },
+            f"{BASE_URL}{path}",
+            data=body,
+            headers=self._headers(json_body=True),
             method="POST",
         )
-
         try:
-            with request.urlopen(req, timeout=(timeout_ms / 1000) + 15) as resp:
-                raw = resp.read().decode("utf-8", "ignore")
-                try:
-                    return json.loads(raw)
-                except json.JSONDecodeError:
-                    return {"data": raw}
-        except error.HTTPError as exc:
-            raw = exc.read().decode("utf-8", "ignore")
+            with request.urlopen(req, timeout=300) as resp:
+                return json.loads(resp.read().decode("utf-8", "ignore"))
+        except error.HTTPError as e:
             try:
-                detail = json.loads(raw)
-            except json.JSONDecodeError:
-                detail = raw or f"HTTP {exc.code}: {exc.reason}"
-            return {"error": detail, "http_status": exc.code}
-        except Exception as exc:
-            return {"error": str(exc)}
+                return json.loads(e.read().decode("utf-8", "ignore"))
+            except Exception:
+                return {"error": str(e.read()) if hasattr(e, 'read') else str(e)}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def _get(self, path):
+        req = request.Request(
+            f"{BASE_URL}{path}",
+            headers=self._headers(),
+            method="GET",
+        )
+        try:
+            with request.urlopen(req, timeout=300) as resp:
+                return json.loads(resp.read().decode("utf-8", "ignore"))
+        except error.HTTPError as e:
+            try:
+                return json.loads(e.read().decode("utf-8", "ignore"))
+            except Exception:
+                return {"error": str(e)}
+        except Exception as e:
+            return {"error": str(e)}
+
+    def create_run(self, task: str):
+        payload = {
+            "task": task,
+        }
+        return self._post("/api/v4/runs", payload)
+
+    def get_run(self, run_id: str):
+        return self._get(f"/api/v4/runs/{run_id}")
 
 
-def _extract_dlink(value):
-    """Extract a URL specifically from dlink/download fields."""
-    if isinstance(value, dict):
-        for key in ("dlink", "downloadUrl", "download_url", "location"):
-            candidate = value.get(key)
-            if isinstance(candidate, str) and candidate.startswith(("http://", "https://")):
-                return candidate
-            found = _extract_dlink(candidate)
-            if found:
-                return found
-        for child in value.values():
-            found = _extract_dlink(child)
-            if found:
-                return found
-        return None
+def extract_dlink_from_run(run_data: dict) -> str | None:
+    # Check all string fields
+    for key in ("output", "result", "final_result", "response"):
+        val = run_data.get(key)
+        if isinstance(val, str):
+            import re
+            # Find dlink
+            m = re.search(r'(https?://[^\s]+teraboxcdn\.com/[^\s]+)', val)
+            if m: return m.group(1).rstrip(").,;'\"")
+            m = re.search(r'(https?://d\.[^\s]+terabox[^/\s]+/[^\s]+)', val)
+            if m: return m.group(1).rstrip(").,;'\"")
+            m = re.search(r'(https?://[^"\s]+teraboxcdn[^"\s]+)', val)
+            if m: return m.group(1)
 
-    if isinstance(value, list):
-        for child in value:
-            found = _extract_dlink(child)
-            if found:
-                return found
+    # Steps
+    steps = run_data.get("steps") or []
+    for step in steps:
+        if isinstance(step, dict):
+            for key in ("output", "result", "tool_result", "content", "thought", "tool_output"):
+                val = step.get(key)
+                if isinstance(val, str):
+                    import re
+                    m = re.search(r'(https?://[^\s]+teraboxcdn\.com/[^\s]+)', val)
+                    if m: return m.group(1).rstrip(").,;'\"")
+                    m = re.search(r'(https?://d\.[^\s]+terabox[^/\s]+/[^\s]+)', val)
+                    if m: return m.group(1).rstrip(").,;'\"")
+                elif isinstance(val, dict):
+                    # recurse
+                    d = extract_dlink_from_run(val)
+                    if d: return d
 
     return None
 
 
-async def get_terabox_dlink(share_url: str) -> dict:
-    """Resolve a public Terabox share URL using Browserless Function API."""
-    client = BrowserlessClient()
+async def get_terabox_dlink(share_url: str, fs_id: str | None = None) -> dict:
+    client = BrowserUseClient()
 
-    # IMPORTANT: do not use a Python f-string for the JavaScript below.
-    # JavaScript object literals also contain braces and can accidentally be
-    # interpreted by Python as f-string expressions (for example app_id).
-    # A plain template plus one explicit placeholder avoids that entire class
-    # of runtime errors.
-    safe_url = json.dumps(share_url)
-    code = r'''export default async ({ page }) => {
-      const shareUrl = __SHARE_URL__;
-      let jsToken = null;
-      let dpLogId = null;
+    task = f"""Extract direct download link (dlink/CDN) from Terabox share link {share_url}.
+Do NOT call any shorturlinfo endpoints that return non-JSON. 
+Navigate to the share page, wait for files to load, intercept or extract the /share/download network response that contains dlink.
+Return ONLY the full dlink URL starting with http(s). No extra text."""
 
-      const rememberRequest = (url) => {
-        try {
-          const parsed = new URL(url);
-          const token = parsed.searchParams.get("jsToken");
-          const logid = parsed.searchParams.get("dp-logid");
-          if (token) jsToken = token;
-          if (logid) dpLogId = logid;
-        } catch (_) {}
-      };
+    run_res = client.create_run(task)
+    run_id = run_res.get("id") or run_res.get("run_id") or run_res.get("runId")
 
-      page.on("request", request => rememberRequest(request.url()));
-      page.on("response", response => rememberRequest(response.url()));
+    if not run_id:
+        return {"success": False, "error": f"Failed to create browser-use run: {run_res}"}
 
-      await page.goto(shareUrl, {
-        waitUntil: "domcontentloaded",
-        timeout: 30000
-      });
+    timeout = 300
+    start = time.time()
+    while time.time() - start < timeout:
+        run = client.get_run(run_id)
+        status = run.get("status") or run.get("state") or run.get("run_status")
+        if status in ("finished", "completed", "success", "done", "succeeded", "stopped"):
+            dlink = extract_dlink_from_run(run)
+            if dlink:
+                return {"success": True, "dlink": dlink}
+            return {
+                "success": False,
+                "error": "No dlink found in run result",
+            }
+        if status in ("failed", "error", "terminated", "canceled", "crashed"):
+            return {
+                "success": False,
+                "error": f"Run failed: {status}",
+            }
+        time.sleep(3)
 
-      await new Promise(resolve => setTimeout(resolve, 2200));
-
-      const html = await page.content();
-      const tokenPatterns = [
-        /[?&]jsToken=([A-Za-z0-9_-]+)/i,
-        /["']jsToken["']\s*[:=]\s*["']([^"']+)["']/i,
-        /jsToken\s*=\s*["']([^"']+)["']/i
-      ];
-
-      if (!jsToken) {
-        for (const pattern of tokenPatterns) {
-          const match = html.match(pattern);
-          if (match) {
-            jsToken = match[1];
-            break;
-          }
-        }
-      }
-
-      if (!jsToken) {
-        const resources = await page.evaluate(() =>
-          performance.getEntriesByType("resource").map(entry => entry.name)
-        );
-        for (const resource of resources) {
-          rememberRequest(resource);
-          if (jsToken) break;
-        }
-      }
-
-      const original = new URL(shareUrl);
-      const current = new URL(page.url());
-
-      const getSurl = (url) => {
-        const parts = url.pathname.split("/").filter(Boolean);
-        const index = parts.findIndex(part => part.toLowerCase() === "s");
-        if (index >= 0 && parts[index + 1]) return parts[index + 1];
-        return url.searchParams.get("surl");
-      };
-
-      const surl = getSurl(current) || getSurl(original);
-
-      if (!jsToken) throw new Error("jsToken Terabox tidak ditemukan");
-      if (!surl) throw new Error("Kode share Terabox tidak ditemukan");
-
-      if (!dpLogId) {
-        dpLogId = String(Date.now()) + String(Math.floor(Math.random() * 9000 + 1000));
-      }
-
-      const common = new URLSearchParams({
-        app_id: "250528",
-        web: "1",
-        channel: "dubox",
-        clienttype: "0",
-        jsToken: jsToken,
-        "dp-logid": dpLogId
-      });
-
-      const infoUrl = new URL("/api/shorturlinfo", location.origin);
-      for (const [key, value] of common.entries()) {
-        infoUrl.searchParams.set(key, value);
-      }
-      infoUrl.searchParams.set("shorturl", surl);
-      infoUrl.searchParams.set("root", "1");
-      infoUrl.searchParams.set("scene", "");
-
-      const infoResponse = await fetch(infoUrl.toString(), {
-        credentials: "include",
-        headers: {
-          "Accept": "application/json, text/plain, */*",
-          "Referer": shareUrl
-        }
-      });
-
-      const infoText = await infoResponse.text();
-      let info;
-      try {
-        info = JSON.parse(infoText);
-      } catch (_) {
-        throw new Error("Terabox shorturlinfo bukan JSON");
-      }
-
-      if (!infoResponse.ok || Number(info.errno) !== 0) {
-        throw new Error(
-          "Terabox metadata gagal (HTTP " +
-          infoResponse.status +
-          ", errno " +
-          (info.errno ?? "?") +
-          "): " +
-          (info.show_msg || "unknown")
-        );
-      }
-
-      const list = Array.isArray(info.list) ? info.list : [];
-      const file = list.find(item => Number(item?.isdir || 0) === 0) || list[0];
-
-      if (!file || !file.fs_id) {
-        throw new Error("File pada share Terabox tidak ditemukan");
-      }
-
-      const shareId = info.shareid ?? info.share_id ?? file.shareid;
-      const uk = info.uk ?? info.share_uk ?? file.uk;
-      const sign = info.sign;
-      const timestamp = info.timestamp;
-
-      if (!shareId || !uk || !sign || !timestamp) {
-        throw new Error(
-          "Metadata download Terabox tidak lengkap (shareid/uk/sign/timestamp)"
-        );
-      }
-
-      const downloadUrl = new URL("/share/download", location.origin);
-      for (const [key, value] of common.entries()) {
-        downloadUrl.searchParams.set(key, value);
-      }
-      downloadUrl.searchParams.set("shareid", String(shareId));
-      downloadUrl.searchParams.set("sign", String(sign));
-      downloadUrl.searchParams.set("timestamp", String(timestamp));
-
-      const body = new URLSearchParams({
-        product: "share",
-        nozip: "0",
-        fid_list: JSON.stringify([Number(file.fs_id)]),
-        uk: String(uk),
-        primaryid: String(shareId)
-      });
-
-      const downloadResponse = await fetch(downloadUrl.toString(), {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-          "Accept": "application/json, text/plain, */*",
-          "Referer": shareUrl
-        },
-        body: body.toString()
-      });
-
-      const downloadText = await downloadResponse.text();
-      let downloadData;
-      try {
-        downloadData = JSON.parse(downloadText);
-      } catch (_) {
-        throw new Error("Terabox share/download bukan JSON");
-      }
-
-      if (!downloadResponse.ok || Number(downloadData.errno) !== 0) {
-        throw new Error(
-          "Terabox download API gagal (HTTP " +
-          downloadResponse.status +
-          ", errno " +
-          (downloadData.errno ?? "?") +
-          "): " +
-          (downloadData.show_msg || "unknown")
-        );
-      }
-
-      const returned = Array.isArray(downloadData.list) ? downloadData.list : [];
-      const returnedFile =
-        returned.find(item => String(item.fs_id) === String(file.fs_id)) ||
-        returned[0];
-      const dlink = returnedFile?.dlink || downloadData.dlink || file.dlink;
-
-      if (!dlink) {
-        throw new Error("Terabox API selesai tetapi dlink kosong");
-      }
-
-      return {
-        data: {
-          dlink: dlink,
-          filename: file.server_filename || file.filename || ""
-        },
-        type: "application/json"
-      };
-    };'''
-
-    code = code.replace("__SHARE_URL__", safe_url)
-
-    result = client._post_function(code, timeout_ms=90000)
-    if result.get("error"):
-        return {
-            "success": False,
-            "error": f"Browserless error: {result.get('error')}",
-        }
-
-    dlink = _extract_dlink(result)
-    if dlink:
-        return {"success": True, "dlink": dlink}
-
-    return {
-        "success": False,
-        "error": "Browserless selesai tetapi direct download link tidak ditemukan.",
-        "debug": result,
-    }
+    return {"success": False, "error": "Timeout waiting for dlink"}
