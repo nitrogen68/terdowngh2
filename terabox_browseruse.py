@@ -447,7 +447,21 @@ async def get_terabox_dlink(share_url: str) -> dict:
         if (dlink) results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file) });
       }
       if (!results.length) throw new Error("Terabox API selesai tetapi dlink kosong. debug=" + JSON.stringify(debugLog).slice(0, 900));
-      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, ndusCookieOk: !!captured.ndusCookieOk }, type: "application/json" };
+      let dlinkProbe = null;
+      try {
+        const probeUrl = results[0] && results[0].dlink;
+        if (probeUrl) {
+          dlinkProbe = await page.evaluate(async (u) => {
+            try {
+              const r = await fetch(u, { method: "GET", headers: { "Range": "bytes=0-1023" }, credentials: "include", redirect: "manual" });
+              const t = await r.text().catch(() => "");
+              return { status: r.status, bodyHead: t.slice(0, 120) };
+            } catch (e) { return { error: String(e).slice(0, 120) }; }
+          }, probeUrl);
+        }
+      } catch (_) {}
+      debugLog.push({ step: "dlink_probe", probe: dlinkProbe });
+      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, ndusCookieOk: !!captured.ndusCookieOk, dlinkProbe }, type: "application/json" };
     };'''
     code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus)
     try:
@@ -465,8 +479,8 @@ async def get_terabox_dlink(share_url: str) -> dict:
     files = _extract_files(result)
     dlink = _extract_dlink(result)
     if files:
-        nck = result.get("data", {}).get("ndusCookieOk") if isinstance(result, dict) else None
-        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename"), "ndus_cookie_ok": nck}
+        rdata = result.get("data", {}) if isinstance(result, dict) else {}
+        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename"), "ndus_cookie_ok": rdata.get("ndusCookieOk"), "dlink_probe": rdata.get("dlinkProbe")}
     if dlink:
         return {"success": True, "dlink": dlink, "files": [{"filename": "file", "dlink": dlink}]}
     fb = _try_public_fallbacks(share_url)
