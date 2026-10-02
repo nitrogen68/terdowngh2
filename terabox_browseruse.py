@@ -63,13 +63,11 @@ class BrowserUseClient:
 
 def extract_dlink_from_run(run_data: dict) -> str | None:
     candidates = []
-    output = run_data.get("output")
-    if isinstance(output, str):
-        candidates.append(output)
 
-    result = run_data.get("result")
-    if isinstance(result, str):
-        candidates.append(result)
+    for key in ("output", "result"):
+        value = run_data.get(key)
+        if isinstance(value, str):
+            candidates.append(value)
 
     steps = run_data.get("steps") or []
     for step in steps:
@@ -96,7 +94,7 @@ def extract_dlink_from_run(run_data: dict) -> str | None:
 async def get_terabox_dlink(share_url: str) -> dict:
     client = BrowserUseClient()
 
-    # Keep the agent task short and deterministic. Browser Use V4 only needs `task`.
+    # Short, focused task. Browser Use V4 receives only the required `task` field.
     task = (
         f"Open {share_url}. "
         "Wait until the Terabox share page is usable. "
@@ -113,7 +111,6 @@ async def get_terabox_dlink(share_url: str) -> dict:
             "error": f"Failed to create browser-use run: {run_res}",
         }
 
-    # Browser Use itself performs the browser work; polling only checks the run state.
     timeout = 120
     start = time.time()
     while time.time() - start < timeout:
@@ -132,7 +129,7 @@ async def get_terabox_dlink(share_url: str) -> dict:
         if status in ("failed", "error", "terminated", "cancelled", "canceled"):
             return {
                 "success": False,
-                "error": f"Browser Use run gagal: {status}
+                "error": f"Browser Use run gagal: {status}",
             }
 
         time.sleep(1)
