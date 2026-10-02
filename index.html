@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TerDowngh - Terabox Direct Downloader</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    :root { font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, sans-serif; }
+    .glass { backdrop-filter: blur(10px); background: rgba(255,255,255,0.85); }
+    .dark .glass { background: rgba(15,23,42,0.85); }
+    .fade-in { animation: fadeIn .25s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .spinner { animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col">
+  <header class="w-full px-4 py-6 flex justify-between items-center max-w-4xl mx-auto">
+    <div class="flex items-center gap-2">
+      <div class="h-9 w-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/20">
+        <i class="bi bi-cloud-arrow-down-fill text-lg"></i>
+      </div>
+      <div>
+        <h1 class="text-lg sm:text-xl font-bold leading-tight">TerDowngh</h1>
+        <p class="text-xs text-slate-500 dark:text-slate-400">Terabox Direct Downloader</p>
+      </div>
+    </div>
+    <button id="themeBtn" class="h-9 w-9 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60 transition flex items-center justify-center">
+      <i class="bi bi-moon-stars-fill dark:hidden"></i>
+      <i class="bi bi-sun-fill hidden dark:block"></i>
+    </button>
+  </header>
+
+  <main class="flex-1 w-full px-4 flex items-start justify-center">
+    <div class="w-full max-w-3xl space-y-6 mt-2 sm:mt-6">
+      <!-- Card Input -->
+      <div class="glass border border-slate-200/70 dark:border-slate-800/70 rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-slate-900/30 p-5 sm:p-7 space-y-5">
+        <div class="space-y-2">
+          <h2 class="text-lg sm:text-xl font-semibold flex items-center gap-2">
+            <i class="bi bi-link-45deg text-indigo-600"></i>
+            Masukkan Link Terabox
+          </h2>
+          <p class="text-sm text-slate-500 dark:text-slate-400">
+            Paste link share Terabox/1024TeraBox, bisa tambahkan <span class="font-medium">fs_id</span> opsional untuk file spesifik.
+          </p>
+        </div>
+
+        <form id="form" class="space-y-4">
+          <div class="space-y-2">
+            <label class="text-sm font-medium">Share Link</label>
+            <input id="urlInput" type="url" placeholder="https://1024terabox.com/s/xxxxxx atau https://terabox.app/s/xxxxxx" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition text-sm sm:text-base" required />
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div class="sm:col-span-2 space-y-2">
+              <label class="text-sm font-medium flex items-center justify-between">
+                <span>fs_id (opsional)</span>
+                <span class="text-xs text-slate-400">Ambil dari share list jika ingin file tertentu</span>
+              </label>
+              <input id="fsIdInput" type="text" inputmode="numeric" placeholder="Contoh: 784992143151960" class="w-full px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/60 focus:outline-none focus:ring-2 focus:ring-indigo-500/40 transition text-sm" />
+            </div>
+            <div class="space-y-2">
+              <label class="text-sm font-medium opacity-0 sm:opacity-100 select-none">.</label>
+              <button id="btnSubmit" type="submit" class="w-full h-[46px] sm:h-[50px] rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium flex items-center justify-center gap-2 shadow-lg shadow-indigo-600/20 transition active:scale-[0.995]">
+                <span id="btnText">Dapatkan Link</span>
+                <i id="btnIcon" class="bi bi-arrow-right"></i>
+                <div id="btnSpinner" class="hidden spinner h-5 w-5 rounded-full border-2 border-white/30 border-t-white"></div>
+              </button>
+            </div>
+          </div>
+
+          <div id="errorBox" class="hidden fade-in rounded-xl border border-red-200 dark:border-red-900/60 bg-red-50/90 dark:bg-red-950/40 px-4 py-3 text-sm text-red-700 dark:text-red-300 flex items-start gap-2">
+            <i class="bi bi-exclamation-triangle-fill mt-0.5"></i>
+            <div id="errorText" class="whitespace-pre-wrap break-words"></div>
+          </div>
+        </form>
+      </div>
+
+      <!-- Card Result -->
+      <div id="resultCard" class="hidden fade-in glass border border-slate-200/70 dark:border-slate-800/70 rounded-2xl shadow-xl shadow-slate-900/5 dark:shadow-slate-900/30 p-5 sm:p-7 space-y-5">
+        <div class="flex items-center justify-between flex-wrap gap-3">
+          <h3 class="text-base sm:text-lg font-semibold flex items-center gap-2">
+            <i class="bi bi-check-circle-fill text-emerald-600"></i>
+            Link Download Siap
+          </h3>
+          <div class="flex items-center gap-2">
+            <button id="btnCopy" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60 text-sm flex items-center gap-1.5 transition">
+              <i class="bi bi-clipboard"></i>
+              Salin
+            </button>
+            <button id="btnReset" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800/60 text-sm flex items-center gap-1.5 transition">
+              <i class="bi bi-arrow-clockwise"></i>
+              Baru
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <div class="space-y-2">
+            <label class="text-xs text-slate-500 dark:text-slate-400">Direct Download Link (dlink)</label>
+            <div class="relative">
+              <input id="dlinkInput" type="text" readonly class="w-full px-4 py-3 pr-10 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/60 text-sm sm:text-base" />
+              <button id="btnCopyIcon" class="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800/60 flex items-center justify-center transition">
+                <i class="bi bi-clipboard"></i>
+              </button>
+            </div>
+          </div>
+
+          <a id="btnDownload" href="#" target="_blank" rel="noopener noreferrer" class="w-full h-12 sm:h-14 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20 transition active:scale-[0.995]">
+            <i class="bi bi-download"></i>
+            Download Sekarang
+          </a>
+
+          <div class="flex items-center justify-center text-xs text-slate-400 gap-2">
+            <i class="bi bi-shield-check"></i>
+            Link bersifat sementara (time-limited) sesuai Terabox
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading State -->
+      <div id="loadingCard" class="hidden fade-in glass border border-slate-200/70 dark:border-slate-800/70 rounded-2xl shadow-xl p-6 sm:p-8 flex flex-col items-center justify-center text-center space-y-4">
+        <div class="relative h-14 w-14 flex items-center justify-center">
+          <div class="absolute inset-0 rounded-full border-2 border-indigo-500/20"></div>
+          <div class="absolute inset-0 rounded-full border-2 border-transparent border-t-indigo-600 spinner"></div>
+          <i class="bi bi-cloud-arrow-down relative text-xl text-indigo-600"></i>
+        </div>
+        <div class="space-y-1">
+          <h3 class="text-base sm:text-lg font-semibold">Mengambil link download...</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 max-w-md">
+            Sedang memproses share link lewat browser cloud. Ini bisa memakan waktu 10–40 detik, mohon tunggu sebentar.
+          </p>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-slate-400 px-3 py-1.5 rounded-full border border-slate-200/70 dark:border-slate-800/70 bg-white/60 dark:bg-slate-900/40">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-600"></span>
+          </span>
+          Menunggu response browser
+        </div>
+      </div>
+
+      <!-- Info -->
+      <div class="text-center text-xs text-slate-400 space-y-1">
+        <p>TerDowngh • Mendapatkan dlink Terabox secara otomatis</p>
+        <p>API: <span class="text-slate-500 dark:text-slate-300">/api/terabox/direct</span></p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const form = document.getElementById('form');
+    const urlInput = document.getElementById('urlInput');
+    const fsIdInput = document.getElementById('fsIdInput');
+    const btnSubmit = document.getElementById('btnSubmit');
+    const btnText = document.getElementById('btnText');
+    const btnIcon = document.getElementById('btnIcon');
+    const btnSpinner = document.getElementById('btnSpinner');
+    const errorBox = document.getElementById('errorBox');
+    const errorText = document.getElementById('errorText');
+    const resultCard = document.getElementById('resultCard');
+    const loadingCard = document.getElementById('loadingCard');
+    const dlinkInput = document.getElementById('dlinkInput');
+    const btnDownload = document.getElementById('btnDownload');
+    const btnCopy = document.getElementById('btnCopy');
+    const btnCopyIcon = document.getElementById('btnCopyIcon');
+    const btnReset = document.getElementById('btnReset');
+    const themeBtn = document.getElementById('themeBtn');
+
+    if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+
+    themeBtn.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    function setLoading(v) {
+      btnSubmit.disabled = v;
+      btnText.textContent = v ? 'Memproses...' : 'Dapatkan Link';
+      btnIcon.classList.toggle('hidden', v);
+      btnSpinner.classList.toggle('hidden', !v);
+      loadingCard.classList.toggle('hidden', !v);
+      resultCard.classList.add('hidden');
+      errorBox.classList.add('hidden');
+    }
+
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorBox.classList.remove('hidden');
+      loadingCard.classList.add('hidden');
+      resultCard.classList.add('hidden');
+      btnSubmit.disabled = false;
+      btnText.textContent = 'Dapatkan Link';
+      btnIcon.classList.remove('hidden');
+      btnSpinner.classList.add('hidden');
+    }
+
+    function showResult(dlink) {
+      dlinkInput.value = dlink;
+      btnDownload.href = dlink;
+      resultCard.classList.remove('hidden');
+      loadingCard.classList.add('hidden');
+      errorBox.classList.add('hidden');
+      setLoading(false);
+    }
+
+    async function copyText(text) {
+      try {
+        await navigator.clipboard.writeText(text);
+        const old = btnCopy.innerHTML;
+        btnCopy.innerHTML = '<i class="bi bi-check-lg"></i> Tersalin';
+        btnCopyIcon.innerHTML = '<i class="bi bi-check-lg"></i>';
+        setTimeout(() => { btnCopy.innerHTML = old; btnCopyIcon.innerHTML = '<i class="bi bi-clipboard"></i>'; }, 1200);
+      } catch (e) {
+        showError('Gagal menyalin link');
+      }
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const url = urlInput.value.trim();
+      const fs_id = fsIdInput.value.trim() || null;
+
+      if (!url) return showError('Link tidak boleh kosong');
+      if (!/^https?:\/\//i.test(url)) return showError('Format link tidak valid');
+
+      setLoading(true);
+      try {
+        const payload = { url };
+        if (fs_id) payload.fs_id = fs_id;
+
+        const res = await fetch('/api/terabox/direct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok || !data.ok || !data.dlink) {
+          const msg = data.error || 'Gagal mendapatkan link download';
+          return showError(msg);
+        }
+        showResult(data.dlink);
+      } catch (err) {
+        return showError(err.message || 'Terjadi kesalahan jaringan');
+      }
+    });
+
+    btnCopy.addEventListener('click', () => copyText(dlinkInput.value));
+    btnCopyIcon.addEventListener('click', () => copyText(dlinkInput.value));
+    btnReset.addEventListener('click', () => {
+      form.reset();
+      resultCard.classList.add('hidden');
+      errorBox.classList.add('hidden');
+      loadingCard.classList.add('hidden');
+      setLoading(false);
+      urlInput.focus();
+    });
+  </script>
+</body>
+</html>

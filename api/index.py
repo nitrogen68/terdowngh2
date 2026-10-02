@@ -21,6 +21,19 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(data)
 
+    def _html(self, path):
+        try:
+            with open(path, 'rb') as f:
+                content = f.read()
+            self.send_response(200)
+            self.send_header('Content-Type', 'text/html; charset=utf-8')
+            self.send_header('Content-Length', str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+            return True
+        except Exception:
+            return False
+
     def do_OPTIONS(self):
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
@@ -30,6 +43,11 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         path = self.path.split('?')[0]
+        if path == '/' or path == '/index.html':
+            if self._html(os.path.join(os.path.dirname(__file__), 'index.html')):
+                return
+            if self._html(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'index.html')):
+                return
         if path == '/health' or path == '/api/health':
             self._json({'status': 'ok'})
             return
@@ -66,4 +84,4 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
 
-app = Handler  # for some runtimes
+app = Handler
