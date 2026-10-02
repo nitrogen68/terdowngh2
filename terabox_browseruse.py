@@ -215,6 +215,21 @@ async def get_terabox_dlink(share_url: str) -> dict:
       }
       await page.goto(shareUrl, { waitUntil: "networkidle2", timeout: 45000 }).catch(() => page.goto(shareUrl, { waitUntil: "domcontentloaded", timeout: 30000 }));
       await new Promise(r => setTimeout(r, 3500));
+      captured.ndusCookieOk = false;
+      try {
+        const ck1 = await page.evaluate(() => document.cookie || "");
+        captured.ndusCookieOk = /(?:^|;\s*)NDUS=/.test(ck1);
+        if (injectedNdus && !captured.ndusCookieOk) {
+          const curOrigin = (() => { try { return new URL(page.url()).origin; } catch (_) { return null; } })();
+          if (curOrigin) {
+            for (const cn of ["NDUS", "ndus"]) {
+              try { await page.setCookie({ name: cn, value: injectedNdus, url: curOrigin, path: "/" }); } catch (_) {}
+            }
+            const ck2 = await page.evaluate(() => document.cookie || "");
+            captured.ndusCookieOk = /(?:^|;\s*)NDUS=/.test(ck2);
+          }
+        }
+      } catch (_) {}
       try {
         for (const sel of ["button", "[class*='download']", "a[href*='download']"]) {
           const els = await page.$$(sel);
@@ -357,7 +372,7 @@ async def get_terabox_dlink(share_url: str) -> dict:
       if (!sekey && info?.randsk) { sekey = info.randsk; try { sekey = decodeURIComponent(String(sekey)); } catch (_) {} }
       if (!sekey && listData?.randsk) { sekey = listData.randsk; try { sekey = decodeURIComponent(String(sekey)); } catch (_) {} }
       const results = [];
-      const debugLog = [{ step: "sekey", hasSekey: !!sekey, sekeyLen: sekey ? String(sekey).length : 0, hasNdus: !!injectedNdus },
+      const debugLog = [{ step: "sekey", hasSekey: !!sekey, sekeyLen: sekey ? String(sekey).length : 0, hasNdus: !!injectedNdus, ndusCookieOk: !!captured.ndusCookieOk },
         { step: "tsinfo", infoTs: info && info.timestamp, browserISO: new Date().toISOString() }];
       const extractDlinkFromPayload = (payload, fsId) => {
         if (!payload || typeof payload !== "object") return null;
@@ -420,7 +435,7 @@ async def get_terabox_dlink(share_url: str) -> dict:
         if (dlink) results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file) });
       }
       if (!results.length) throw new Error("Terabox API selesai tetapi dlink kosong. debug=" + JSON.stringify(debugLog).slice(0, 900));
-      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results }, type: "application/json" };
+      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, ndusCookieOk: !!captured.ndusCookieOk }, type: "application/json" };
     };'''
     code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus)
     try:
@@ -438,7 +453,8 @@ async def get_terabox_dlink(share_url: str) -> dict:
     files = _extract_files(result)
     dlink = _extract_dlink(result)
     if files:
-        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename")}
+        nck = result.get("data", {}).get("ndusCookieOk") if isinstance(result, dict) else None
+        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename"), "ndus_cookie_ok": nck}
     if dlink:
         return {"success": True, "dlink": dlink, "files": [{"filename": "file", "dlink": dlink}]}
     fb = _try_public_fallbacks(share_url)
