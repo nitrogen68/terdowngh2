@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="cache-version" content="2026-10-03-dark-stream-thumb">
+  <meta name="cache-version" content="2026-10-03-stream-noreferer">
   <title>TerDowngh — Terabox Direct Downloader</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -102,7 +102,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
-      <video id="streamVideo" class="w-full max-h-[70vh] bg-black" controls playsinline preload="metadata"></video>
+      <video id="streamVideo" class="w-full max-h-[70vh] bg-black" controls playsinline preload="metadata" referrerpolicy="no-referrer"></video>
       <p id="streamError" class="hidden px-4 py-3 text-sm text-red-600 dark:text-red-400"></p>
     </div>
   </div>
@@ -314,12 +314,20 @@
     const streamVideo = document.getElementById('streamVideo');
     const streamError = document.getElementById('streamError');
 
+    let streamFile = null;
+    let streamRetried = false;
+
     function openStream(file) {
+      streamFile = file;
+      streamRetried = false;
       streamTitle.textContent = file.filename || 'Streaming';
       streamError.classList.add('hidden');
       streamError.textContent = '';
       streamModal.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
+      // Coba tanpa Referer dulu: banyak CDN memblokir hotlink dari domain
+      // asing tapi mengizinkan request tanpa Referer.
+      streamVideo.setAttribute('referrerpolicy', 'no-referrer');
       streamVideo.src = file.dlink;
       streamVideo.play().catch(() => {});
     }
@@ -338,7 +346,17 @@
       if (e.key === 'Escape' && !streamModal.classList.contains('hidden')) closeStream();
     });
     streamVideo.addEventListener('error', () => {
-      streamError.textContent = 'Gagal memuat stream. Kemungkinan link dibatasi CORS atau sudah kedaluwarsa — coba lewat tombol Download.';
+      // Fallback: coba sekali lagi dengan Referer normal, siapa tahu
+      // CDN-nya justru membutuhkan Referer.
+      if (streamFile && !streamRetried) {
+        streamRetried = true;
+        streamVideo.removeAttribute('referrerpolicy');
+        streamVideo.src = streamFile.dlink;
+        streamVideo.load();
+        streamVideo.play().catch(() => {});
+        return;
+      }
+      streamError.textContent = 'Gagal memuat stream. Link mungkin sudah kedaluwarsa atau dibatasi server — coba buat link baru, atau pakai tombol Download.';
       streamError.classList.remove('hidden');
     });
 
