@@ -281,6 +281,18 @@ async def get_terabox_dlink(share_url: str) -> dict:
       }
       if (!captured.dpLogId) captured.dpLogId = String(Date.now()) + String(Math.floor(Math.random() * 9000 + 1000));
       const origin = (() => { try { return new URL(currentUrl).origin; } catch (_) { try { return new URL(shareUrl).origin; } catch (__) { return "https://www.terabox.com"; } } })();
+      try {
+        const ckA = await page.evaluate(() => document.cookie || "");
+        captured.ndusCookieOk = /(?:^|;\s*)NDUS=/.test(ckA);
+        captured.fetchOrigin = origin;
+        if (injectedNdus && !captured.ndusCookieOk) {
+          for (const cn of ["NDUS", "ndus"]) {
+            try { await page.setCookie({ name: cn, value: injectedNdus, url: origin, path: "/" }); } catch (_) {}
+          }
+          const ckB = await page.evaluate(() => document.cookie || "");
+          captured.ndusCookieOk = /(?:^|;\s*)NDUS=/.test(ckB);
+        }
+      } catch (_) {}
       const commonParams = () => {
         const p = new URLSearchParams({ app_id: "250528", web: "1", channel: "dubox", clienttype: "0", "dp-logid": captured.dpLogId });
         if (captured.jsToken) p.set("jsToken", captured.jsToken);
