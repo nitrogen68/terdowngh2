@@ -1,1 +1,447 @@
-aW1wb3J0IGpzb24KaW1wb3J0IG9zCmltcG9ydCByZQpmcm9tIHVybGxpYiBpbXBvcnQgcmVxdWVzdCwgZXJyb3IKZnJvbSB1cmxsaWIucGFyc2UgaW1wb3J0IHF1b3RlLCB1cmxwYXJzZSwgcGFyc2VfcXMKCkJST1dTRVJMRVNTX1RPS0VOID0gb3MuZW52aXJvbi5nZXQoIkJST1dTRVJMRVNTX1RPS0VOIiwgIiIpLnN0cmlwKCkKQlJPV1NFUkxFU1NfRU5EUE9JTlQgPSAiaHR0cHM6Ly9wcm9kdWN0aW9uLXNmby5icm93c2VybGVzcy5pby9mdW5jdGlvbiIKClBVQkxJQ19GQUxMQkFDS1MgPSBbCiAgICAiaHR0cHM6Ly90ZXJhYm94LXdvcmtlci5yb2Jpbmt1bWFyc2hha3lhMTAzLndvcmtlcnMuZGV2L2FwaT91cmw9e3VybH0iLAogICAgImh0dHBzOi8vdGJ4LXByb3h5LnNoYWtpci1hbnNhcmlpMDc1LndvcmtlcnMuZGV2Lz9tb2RlPXJlc29sdmUmc3VybD17c3VybH0iLApdCgoKY2xhc3MgQnJvd3Nlcmxlc3NDbGllbnQ6CiAgICBkZWYgX3Bvc3RfZnVuY3Rpb24oc2VsZiwgY29kZTogc3RyLCB0aW1lb3V0X21zOiBpbnQgPSA1MDAwMCk6CiAgICAgICAgaWYgbm90IEJST1dTRVJMRVNTX1RPS0VOOgogICAgICAgICAgICByYWlzZSBSdW50aW1lRXJyb3IoIkJST1dTRVJMRVNTX1RPS0VOIGJlbHVtIGRpa29uZmlndXJhc2kiKQogICAgICAgIGVuZHBvaW50ID0gKAogICAgICAgICAgICBmIntCUk9XU0VSTEVTU19FTkRQT0lOVH0/dG9rZW49e3F1b3RlKEJST1dTRVJMRVNTX1RPS0VOLCBzYWZlPScnKX0iCiAgICAgICAgICAgIGYiJnRpbWVvdXQ9e3RpbWVvdXRfbXN9IgogICAgICAgICkKICAgICAgICByZXEgPSByZXF1ZXN0LlJlcXVlc3QoCiAgICAgICAgICAgIGVuZHBvaW50LAogICAgICAgICAgICBkYXRhPWNvZGUuZW5jb2RlKCJ1dGYtOCIpLAogICAgICAgICAgICBoZWFkZXJzPXsiQ29udGVudC1UeXBlIjogImFwcGxpY2F0aW9uL2phdmFzY3JpcHQiLCAiQ2FjaGUtQ29udHJvbCI6ICJuby1jYWNoZSJ9LAogICAgICAgICAgICBtZXRob2Q9IlBPU1QiLAogICAgICAgICkKICAgICAgICB0cnk6CiAgICAgICAgICAgIHdpdGggcmVxdWVzdC51cmxvcGVuKHJlcSwgdGltZW91dD0odGltZW91dF9tcyAvIDEwMDApICsgMjApIGFzIHJlc3A6CiAgICAgICAgICAgICAgICByYXcgPSByZXNwLnJlYWQoKS5kZWNvZGUoInV0Zi04IiwgImlnbm9yZSIpCiAgICAgICAgICAgICAgICB0cnk6CiAgICAgICAgICAgICAgICAgICAgcmV0dXJuIGpzb24ubG9hZHMocmF3KQogICAgICAgICAgICAgICAgZXhjZXB0IGpzb24uSlNPTkRlY29kZUVycm9yOgogICAgICAgICAgICAgICAgICAgIHJldHVybiB7ImRhdGEiOiByYXd9CiAgICAgICAgZXhjZXB0IGVycm9yLkhUVFBFcnJvciBhcyBleGM6CiAgICAgICAgICAgIHJhdyA9IGV4Yy5yZWFkKCkuZGVjb2RlKCJ1dGYtOCIsICJpZ25vcmUiKQogICAgICAgICAgICB0cnk6CiAgICAgICAgICAgICAgICBkZXRhaWwgPSBqc29uLmxvYWRzKHJhdykKICAgICAgICAgICAgZXhjZXB0IGpzb24uSlNPTkRlY29kZUVycm9yOgogICAgICAgICAgICAgICAgZGV0YWlsID0gcmF3IG9yIGYiSFRUUCB7ZXhjLmNvZGV9OiB7ZXhjLnJlYXNvbn0iCiAgICAgICAgICAgIHJldHVybiB7ImVycm9yIjogZGV0YWlsLCAiaHR0cF9zdGF0dXMiOiBleGMuY29kZX0KICAgICAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGV4YzoKICAgICAgICAgICAgcmV0dXJuIHsiZXJyb3IiOiBzdHIoZXhjKX0KCgpkZWYgX2V4dHJhY3Rfc3VybCh1cmw6IHN0cik6CiAgICB0cnk6CiAgICAgICAgcGFyc2VkID0gdXJscGFyc2UodXJsKQogICAgICAgIG0gPSByZS5zZWFyY2gociIvcy8oW0EtWmEtejAtOV8tXSspIiwgcGFyc2VkLnBhdGgpCiAgICAgICAgaWYgbToKICAgICAgICAgICAgc3VybCA9IG0uZ3JvdXAoMSkKICAgICAgICAgICAgcmV0dXJuIHN1cmxbMTpdIGlmIHN1cmwuc3RhcnRzd2l0aCgiMSIpIGFuZCBsZW4oc3VybCkgPiAxNSBlbHNlIHN1cmwKICAgICAgICBxcyA9IHBhcnNlX3FzKHBhcnNlZC5xdWVyeSkKICAgICAgICBpZiAic3VybCIgaW4gcXMgYW5kIHFzWyJzdXJsIl06CiAgICAgICAgICAgIHN1cmwgPSBxc1sic3VybCJdWzBdCiAgICAgICAgICAgIHJldHVybiBzdXJsWzE6XSBpZiBzdXJsLnN0YXJ0c3dpdGgoIjEiKSBhbmQgbGVuKHN1cmwpID4gMTUgZWxzZSBzdXJsCiAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgIHBhc3MKICAgIHJldHVybiBOb25lCgoKZGVmIF9leHRyYWN0X2RsaW5rKHZhbHVlKToKICAgIGlmIGlzaW5zdGFuY2UodmFsdWUsIGRpY3QpOgogICAgICAgIGZvciBrZXkgaW4gKCJkbGluayIsICJkb3dubG9hZFVybCIsICJkb3dubG9hZF91cmwiLCAib3JpZ2luYWxfZG93bmxvYWRfdXJsIiwgImRpcmVjdF9saW5rIiwgImxvY2F0aW9uIik6CiAgICAgICAgICAgIGNhbmRpZGF0ZSA9IHZhbHVlLmdldChrZXkpCiAgICAgICAgICAgIGlmIGlzaW5zdGFuY2UoY2FuZGlkYXRlLCBzdHIpIGFuZCBjYW5kaWRhdGUuc3RhcnRzd2l0aCgoImh0dHA6Ly8iLCAiaHR0cHM6Ly8iKSk6CiAgICAgICAgICAgICAgICByZXR1cm4gY2FuZGlkYXRlCiAgICAgICAgICAgIGZvdW5kID0gX2V4dHJhY3RfZGxpbmsoY2FuZGlkYXRlKQogICAgICAgICAgICBpZiBmb3VuZDoKICAgICAgICAgICAgICAgIHJldHVybiBmb3VuZAogICAgICAgIGZvciBjaGlsZCBpbiB2YWx1ZS52YWx1ZXMoKToKICAgICAgICAgICAgZm91bmQgPSBfZXh0cmFjdF9kbGluayhjaGlsZCkKICAgICAgICAgICAgaWYgZm91bmQ6CiAgICAgICAgICAgICAgICByZXR1cm4gZm91bmQKICAgICAgICByZXR1cm4gTm9uZQogICAgaWYgaXNpbnN0YW5jZSh2YWx1ZSwgbGlzdCk6CiAgICAgICAgZm9yIGNoaWxkIGluIHZhbHVlOgogICAgICAgICAgICBmb3VuZCA9IF9leHRyYWN0X2RsaW5rKGNoaWxkKQogICAgICAgICAgICBpZiBmb3VuZDoKICAgICAgICAgICAgICAgIHJldHVybiBmb3VuZAogICAgcmV0dXJuIE5vbmUKCgpkZWYgX2V4dHJhY3RfZmlsZXModmFsdWUpOgogICAgZmlsZXMgPSBbXQogICAgZGVmIHdhbGsob2JqKToKICAgICAgICBpZiBpc2luc3RhbmNlKG9iaiwgZGljdCk6CiAgICAgICAgICAgIG5hbWUgPSBvYmouZ2V0KCJzZXJ2ZXJfZmlsZW5hbWUiKSBvciBvYmouZ2V0KCJmaWxlX25hbWUiKSBvciBvYmouZ2V0KCJmaWxlbmFtZSIpIG9yIG9iai5nZXQoIm5hbWUiKSBvciBvYmouZ2V0KCJ0aXRsZSIpCiAgICAgICAgICAgIGRsaW5rID0gb2JqLmdldCgiZGxpbmsiKSBvciBvYmouZ2V0KCJkb3dubG9hZF91cmwiKSBvciBvYmouZ2V0KCJvcmlnaW5hbF9kb3dubG9hZF91cmwiKSBvciBvYmouZ2V0KCJkaXJlY3RfbGluayIpCiAgICAgICAgICAgIHNpemUgPSBvYmouZ2V0KCJzaXplIikgb3Igb2JqLmdldCgiZm9ybWF0dGVkX3NpemUiKQogICAgICAgICAgICBpZiBuYW1lIGFuZCBpc2luc3RhbmNlKGRsaW5rLCBzdHIpIGFuZCBkbGluay5zdGFydHN3aXRoKCJodHRwIik6CiAgICAgICAgICAgICAgICB0aHVtYiA9IG9iai5nZXQoInRodW1iIikKICAgICAgICAgICAgICAgIGlmIG5vdCBpc2luc3RhbmNlKHRodW1iLCBzdHIpOgogICAgICAgICAgICAgICAgICAgIHRoID0gb2JqLmdldCgidGh1bWJzIikKICAgICAgICAgICAgICAgICAgICBpZiBpc2luc3RhbmNlKHRoLCBkaWN0KToKICAgICAgICAgICAgICAgICAgICAgICAgY2FuZCA9IHRoLmdldCgidXJsMyIpIG9yIHRoLmdldCgidXJsMiIpIG9yIHRoLmdldCgidXJsMSIpCiAgICAgICAgICAgICAgICAgICAgICAgIHRodW1iID0gY2FuZCBpZiBpc2luc3RhbmNlKGNhbmQsIHN0cikgZWxzZSBOb25lCiAgICAgICAgICAgICAgICBmaWxlcy5hcHBlbmQoeyJmaWxlbmFtZSI6IG5hbWUsICJzaXplIjogc2l6ZSwgImRsaW5rIjogZGxpbmssCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICJ0aHVtYiI6IHRodW1iIGlmIGlzaW5zdGFuY2UodGh1bWIsIHN0cikgZWxzZSBOb25lfSkKICAgICAgICAgICAgZm9yIHYgaW4gb2JqLnZhbHVlcygpOgogICAgICAgICAgICAgICAgd2Fsayh2KQogICAgICAgIGVsaWYgaXNpbnN0YW5jZShvYmosIGxpc3QpOgogICAgICAgICAgICBmb3IgaXRlbSBpbiBvYmo6CiAgICAgICAgICAgICAgICB3YWxrKGl0ZW0pCiAgICB3YWxrKHZhbHVlKQogICAgc2Vlbiwgb3V0ID0gc2V0KCksIFtdCiAgICBmb3IgZiBpbiBmaWxlczoKICAgICAgICBpZiBmWyJkbGluayJdIG5vdCBpbiBzZWVuOgogICAgICAgICAgICBzZWVuLmFkZChmWyJkbGluayJdKQogICAgICAgICAgICBvdXQuYXBwZW5kKGYpCiAgICByZXR1cm4gb3V0CgoKZGVmIF9odHRwX2dldF9qc29uKHVybDogc3RyLCB0aW1lb3V0OiBpbnQgPSAyNSk6CiAgICB0cnk6CiAgICAgICAgcmVxID0gcmVxdWVzdC5SZXF1ZXN0KHVybCwgaGVhZGVycz17IlVzZXItQWdlbnQiOiAiTW96aWxsYS81LjAiLCAiQWNjZXB0IjogImFwcGxpY2F0aW9uL2pzb24ifSwgbWV0aG9kPSJHRVQiKQogICAgICAgIHdpdGggcmVxdWVzdC51cmxvcGVuKHJlcSwgdGltZW91dD10aW1lb3V0KSBhcyByZXNwOgogICAgICAgICAgICByZXR1cm4ganNvbi5sb2FkcyhyZXNwLnJlYWQoKS5kZWNvZGUoInV0Zi04IiwgImlnbm9yZSIpKQogICAgZXhjZXB0IEV4Y2VwdGlvbjoKICAgICAgICByZXR1cm4gTm9uZQoKCmRlZiBfdHJ5X3B1YmxpY19mYWxsYmFja3Moc2hhcmVfdXJsOiBzdHIpOgogICAgc3VybCA9IF9leHRyYWN0X3N1cmwoc2hhcmVfdXJsKSBvciAiIgogICAgZm9yIHRlbXBsYXRlIGluIFBVQkxJQ19GQUxMQkFDS1M6CiAgICAgICAgdHJ5OgogICAgICAgICAgICBhcGlfdXJsID0gdGVtcGxhdGUuZm9ybWF0KHVybD1xdW90ZShzaGFyZV91cmwsIHNhZmU9IiIpLCBzdXJsPXN1cmwpCiAgICAgICAgICAgIGRhdGEgPSBfaHR0cF9nZXRfanNvbihhcGlfdXJsKQogICAgICAgICAgICBpZiBub3QgZGF0YToKICAgICAgICAgICAgICAgIGNvbnRpbnVlCiAgICAgICAgICAgIGlmIGRhdGEuZ2V0KCJzdWNjZXNzIikgYW5kIGRhdGEuZ2V0KCJmaWxlcyIpOgogICAgICAgICAgICAgICAgZmlsZXMgPSBbXQogICAgICAgICAgICAgICAgZm9yIGYgaW4gZGF0YVsiZmlsZXMiXToKICAgICAgICAgICAgICAgICAgICBkbGluayA9IGYuZ2V0KCJvcmlnaW5hbF9kb3dubG9hZF91cmwiKSBvciBmLmdldCgiZG93bmxvYWRfdXJsIikgb3IgZi5nZXQoImRsaW5rIikKICAgICAgICAgICAgICAgICAgICBpZiBkbGluazoKICAgICAgICAgICAgICAgICAgICAgICAgZmlsZXMuYXBwZW5kKHsiZmlsZW5hbWUiOiBmLmdldCgiZmlsZV9uYW1lIikgb3IgZi5nZXQoImZpbGVuYW1lIikgb3IgImZpbGUiLCAic2l6ZSI6IGYuZ2V0KCJzaXplIiksICJkbGluayI6IGRsaW5rfSkKICAgICAgICAgICAgICAgIGlmIGZpbGVzOgogICAgICAgICAgICAgICAgICAgIHJldHVybiB7InN1Y2Nlc3MiOiBUcnVlLCAiZGxpbmsiOiBmaWxlc1swXVsiZGxpbmsiXSwgImZpbGVzIjogZmlsZXN9CiAgICAgICAgICAgIGlmIGRhdGEuZ2V0KCJkYXRhIikgYW5kIG5vdCBkYXRhLmdldCgiZXJyb3IiKToKICAgICAgICAgICAgICAgIGQgPSBkYXRhWyJkYXRhIl0KICAgICAgICAgICAgICAgIGRsaW5rID0gZC5nZXQoImRsaW5rIikgb3IgZC5nZXQoImRvd25sb2FkX3VybCIpCiAgICAgICAgICAgICAgICBpZiBkbGluazoKICAgICAgICAgICAgICAgICAgICByZXR1cm4geyJzdWNjZXNzIjogVHJ1ZSwgImRsaW5rIjogZGxpbmssICJmaWxlcyI6IFt7ImZpbGVuYW1lIjogZC5nZXQoIm5hbWUiKSBvciAiZmlsZSIsICJzaXplIjogZC5nZXQoInNpemUiKSwgImRsaW5rIjogZGxpbmt9XX0KICAgICAgICBleGNlcHQgRXhjZXB0aW9uOgogICAgICAgICAgICBjb250aW51ZQogICAgcmV0dXJuIE5vbmUKCgoKZGVmIF9jbGVhbl9icm93c2VybGVzc19lcnJvcihtc2cpOgogICAgIiIiUmFwaWthbiBwZXNhbiBlcnJvciBCcm93c2VybGVzcyAoYnVhbmcgZW1iZWwtZW1iZWwgc3RhY2sgJiByZXF1ZXN0SWQpLiIiIgogICAgbXNnID0gc3RyKG1zZyBvciAiIikKICAgIG1zZyA9IHJlLnN1YihyIlxzKlwocmVxdWVzdElkOlteKV0qXClccyokIiwgIiIsIG1zZykKICAgIG1zZyA9IHJlLnN1YihyIlxzK2RlZmF1bHRccypcKGh0dHBzPzovL1teKV0qXCkiLCAiIiwgbXNnKQogICAgcmV0dXJuIG1zZy5zdHJpcCgpIG9yICJicm93c2VybGVzcyBnYWdhbCB0YW5wYSBwZXNhbiIKCgphc3luYyBkZWYgZ2V0X3RlcmFib3hfZGxpbmsoc2hhcmVfdXJsOiBzdHIpIC0+IGRpY3Q6CiAgICBjbGllbnQgPSBCcm93c2VybGVzc0NsaWVudCgpCiAgICBuZHVzID0gKG9zLmVudmlyb24uZ2V0KCJURVJBQk9YX05EVVMiKSBvciAiIikuc3RyaXAoKQogICAgaWYgbmR1cy5sb3dlcigpLnN0YXJ0c3dpdGgoIm5kdXM9Iik6CiAgICAgICAgbmR1cyA9IG5kdXMuc3BsaXQoIj0iLCAxKVsxXS5zdHJpcCgpCiAgICBzYWZlX3VybCA9IGpzb24uZHVtcHMoc2hhcmVfdXJsKQogICAgc2FmZV9uZHVzID0ganNvbi5kdW1wcyhuZHVzKQogICAgY29kZSA9IHInJydleHBvcnQgZGVmYXVsdCBhc3luYyAoeyBwYWdlIH0pID0+IHsKICAgICAgY29uc3Qgc2hhcmVVcmwgPSBfX1NIQVJFX1VSTF9fOwogICAgICBjb25zdCBpbmplY3RlZE5kdXMgPSBfX05EVVNfXzsKICAgICAgY29uc3QgY2FwdHVyZWQgPSB7IGpzVG9rZW46IG51bGwsIGRwTG9nSWQ6IG51bGwsIHNob3J0dXJsaW5mbzogbnVsbCwgc2hhcmVMaXN0OiBudWxsLCBkb3dubG9hZFJlc3BvbnNlczogW10sIHJlc291cmNlVXJsczogW10gfTsKICAgICAgY29uc3QgcGlja1RodW1iID0gKGYpID0+IHsKICAgICAgICB0cnkgewogICAgICAgICAgY29uc3QgdCA9IGYgJiYgZi50aHVtYnM7CiAgICAgICAgICBpZiAodCAmJiB0eXBlb2YgdCA9PT0gIm9iamVjdCIpIHJldHVybiB0LnVybDMgfHwgdC51cmwyIHx8IHQudXJsMSB8fCBudWxsOwogICAgICAgIH0gY2F0Y2ggKF8pIHt9CiAgICAgICAgcmV0dXJuIG51bGw7CiAgICAgIH07CiAgICAgIGNvbnN0IHJlbWVtYmVyUmVxdWVzdCA9ICh1cmwpID0+IHsKICAgICAgICB0cnkgewogICAgICAgICAgY29uc3QgcGFyc2VkID0gbmV3IFVSTCh1cmwpOwogICAgICAgICAgY29uc3QgdG9rZW4gPSBwYXJzZWQuc2VhcmNoUGFyYW1zLmdldCgianNUb2tlbiIpOwogICAgICAgICAgY29uc3QgbG9naWQgPSBwYXJzZWQuc2VhcmNoUGFyYW1zLmdldCgiZHAtbG9naWQiKTsKICAgICAgICAgIGlmICh0b2tlbikgY2FwdHVyZWQuanNUb2tlbiA9IHRva2VuOwogICAgICAgICAgaWYgKGxvZ2lkKSBjYXB0dXJlZC5kcExvZ0lkID0gbG9naWQ7CiAgICAgICAgfSBjYXRjaCAoXykge30KICAgICAgfTsKICAgICAgcGFnZS5vbigicmVxdWVzdCIsIHIgPT4gcmVtZW1iZXJSZXF1ZXN0KHIudXJsKCkpKTsKICAgICAgcGFnZS5vbigicmVzcG9uc2UiLCBhc3luYyAocmVzcG9uc2UpID0+IHsKICAgICAgICB0cnkgewogICAgICAgICAgY29uc3QgdXJsID0gcmVzcG9uc2UudXJsKCk7CiAgICAgICAgICByZW1lbWJlclJlcXVlc3QodXJsKTsKICAgICAgICAgIGNvbnN0IGN0ID0gKHJlc3BvbnNlLmhlYWRlcnMoKVsiY29udGVudC10eXBlIl0gfHwgIiIpLnRvTG93ZXJDYXNlKCk7CiAgICAgICAgICBpZiAoIWN0LmluY2x1ZGVzKCJqc29uIikgJiYgIWN0LmluY2x1ZGVzKCJ0ZXh0IikpIHJldHVybjsKICAgICAgICAgIGlmICh1cmwuaW5jbHVkZXMoInNob3J0dXJsaW5mbyIpIHx8IHVybC5pbmNsdWRlcygiL3NoYXJlL2xpc3QiKSB8fCB1cmwuaW5jbHVkZXMoImRvd25sb2FkIikgfHwgdXJsLmluY2x1ZGVzKCJmaWxlbWV0YXMiKSB8fCB1cmwuaW5jbHVkZXMoImRsaW5rIikpIHsKICAgICAgICAgICAgdHJ5IHsKICAgICAgICAgICAgICBjb25zdCB0ZXh0ID0gYXdhaXQgcmVzcG9uc2UudGV4dCgpOwogICAgICAgICAgICAgIGxldCBwYXJzZWQgPSBudWxsOwogICAgICAgICAgICAgIHRyeSB7IHBhcnNlZCA9IEpTT04ucGFyc2UodGV4dCk7IH0gY2F0Y2ggKF8pIHsgcGFyc2VkID0geyBfcmF3OiB0ZXh0LnNsaWNlKDAsIDQwMCkgfTsgfQogICAgICAgICAgICAgIGlmICh1cmwuaW5jbHVkZXMoInNob3J0dXJsaW5mbyIpKSBjYXB0dXJlZC5zaG9ydHVybGluZm8gPSBwYXJzZWQ7CiAgICAgICAgICAgICAgaWYgKHVybC5pbmNsdWRlcygiL3NoYXJlL2xpc3QiKSkgY2FwdHVyZWQuc2hhcmVMaXN0ID0gcGFyc2VkOwogICAgICAgICAgICAgIGlmICh1cmwuaW5jbHVkZXMoImRvd25sb2FkIikgfHwgdXJsLmluY2x1ZGVzKCJmaWxlbWV0YXMiKSB8fCB1cmwuaW5jbHVkZXMoImRsaW5rIikpCiAgICAgICAgICAgICAgICBjYXB0dXJlZC5kb3dubG9hZFJlc3BvbnNlcy5wdXNoKHsgdXJsLCBkYXRhOiBwYXJzZWQgfSk7CiAgICAgICAgICAgIH0gY2F0Y2ggKF8pIHt9CiAgICAgICAgICB9CiAgICAgICAgfSBjYXRjaCAoXykge30KICAgICAgfSk7CiAgICAgIGF3YWl0IHBhZ2Uuc2V0VXNlckFnZW50KCJNb3ppbGxhLzUuMCAoV2luZG93cyBOVCAxMC4wOyBXaW42NDsgeDY0KSBBcHBsZVdlYktpdC81MzcuMzYgKEtIVE1MLCBsaWtlIEdlY2tvKSBDaHJvbWUvMTIwLjAuMC4wIFNhZmFyaS81MzcuMzYiKTsKICAgICAgYXdhaXQgcGFnZS5zZXRWaWV3cG9ydCh7IHdpZHRoOiAxMzY2LCBoZWlnaHQ6IDc2OCB9KTsKICAgICAgaWYgKGluamVjdGVkTmR1cykgewogICAgICAgIGZvciAoY29uc3QgZG9tYWluIG9mIFsiLnRlcmFib3guY29tIiwgIi50ZXJhYm94LmFwcCIsICIuMTAyNHRlcmFib3guY29tIiwgIi4xMDI0dGVyYS5jb20iLCAid3d3LnRlcmFib3guY29tIiwgInd3dy50ZXJhYm94LmFwcCIsICJ3d3cuMTAyNHRlcmEuY29tIiwgIjEwMjR0ZXJhYm94LmNvbSJdKSB7CiAgICAgICAgICBmb3IgKGNvbnN0IGNvb2tpZU5hbWUgb2YgWyJORFVTIiwgIm5kdXMiXSkgewogICAgICAgICAgICB0cnkgeyBhd2FpdCBwYWdlLnNldENvb2tpZSh7IG5hbWU6IGNvb2tpZU5hbWUsIHZhbHVlOiBpbmplY3RlZE5kdXMsIGRvbWFpbiwgcGF0aDogIi8iLCBzZWN1cmU6IHRydWUgfSk7IH0gY2F0Y2ggKF8pIHt9CiAgICAgICAgICB9CiAgICAgICAgfQogICAgICB9CiAgICAgIGF3YWl0IHBhZ2UuZ290byhzaGFyZVVybCwgeyB3YWl0VW50aWw6ICJuZXR3b3JraWRsZTIiLCB0aW1lb3V0OiA0NTAwMCB9KS5jYXRjaCgoKSA9PiBwYWdlLmdvdG8oc2hhcmVVcmwsIHsgd2FpdFVudGlsOiAiZG9tY29udGVudGxvYWRlZCIsIHRpbWVvdXQ6IDMwMDAwIH0pKTsKICAgICAgYXdhaXQgbmV3IFByb21pc2UociA9PiBzZXRUaW1lb3V0KHIsIDM1MDApKTsKICAgICAgdHJ5IHsKICAgICAgICBmb3IgKGNvbnN0IHNlbCBvZiBbImJ1dHRvbiIsICJbY2xhc3MqPSdkb3dubG9hZCddIiwgImFbaHJlZio9J2Rvd25sb2FkJ10iXSkgewogICAgICAgICAgY29uc3QgZWxzID0gYXdhaXQgcGFnZS4kJChzZWwpOwogICAgICAgICAgZm9yIChjb25zdCBlbCBvZiBlbHMuc2xpY2UoMCwgNSkpIHsKICAgICAgICAgICAgY29uc3QgdGV4dCA9IChhd2FpdCBwYWdlLmV2YWx1YXRlKGUgPT4gKGUuaW5uZXJUZXh0IHx8ICIiKS50b0xvd2VyQ2FzZSgpLCBlbCkpLnRyaW0oKTsKICAgICAgICAgICAgaWYgKHRleHQuaW5jbHVkZXMoImRvd25sb2FkIikgfHwgdGV4dC5pbmNsdWRlcygidW5kdWgiKSB8fCB0ZXh0LmluY2x1ZGVzKCJjb250aW51ZSIpKSB7CiAgICAgICAgICAgICAgYXdhaXQgZWwuY2xpY2soKS5jYXRjaCgoKSA9PiB7fSk7CiAgICAgICAgICAgICAgYXdhaXQgbmV3IFByb21pc2UociA9PiBzZXRUaW1lb3V0KHIsIDgwMCkpOwogICAgICAgICAgICB9CiAgICAgICAgICB9CiAgICAgICAgfQogICAgICB9IGNhdGNoIChfKSB7fQogICAgICBhd2FpdCBuZXcgUHJvbWlzZShyID0+IHNldFRpbWVvdXQociwgMTUwMCkpOwogICAgICBjb25zdCBodG1sID0gYXdhaXQgcGFnZS5jb250ZW50KCk7CiAgICAgIGNvbnN0IGN1cnJlbnRVcmwgPSBwYWdlLnVybCgpOwogICAgICBpZiAoIWNhcHR1cmVkLmpzVG9rZW4pIHsKICAgICAgICBmb3IgKGNvbnN0IHBhdHRlcm4gb2YgWy9bPyZdanNUb2tlbj0oW0EtWmEtejAtOV8tXSspL2ksIC9bIiddanNUb2tlblsiJ11ccypbOj1dXHMqWyInXShbXiInXSspWyInXS9pLCAvZm4lMjglMjIoW0EtWmEtejAtOV8tXSspJTIyJTI5L2ksIC9mblwoIihbQS1aYS16MC05Xy1dKykiXCkvaV0pIHsKICAgICAgICAgIGNvbnN0IG1hdGNoID0gaHRtbC5tYXRjaChwYXR0ZXJuKTsKICAgICAgICAgIGlmIChtYXRjaCkgeyBjYXB0dXJlZC5qc1Rva2VuID0gbWF0Y2hbMV07IGJyZWFrOyB9CiAgICAgICAgfQogICAgICB9CiAgICAgIGlmICghY2FwdHVyZWQuanNUb2tlbikgewogICAgICAgIHRyeSB7CiAgICAgICAgICBmb3IgKGNvbnN0IHJlc291cmNlIG9mIGF3YWl0IHBhZ2UuZXZhbHVhdGUoKCkgPT4gcGVyZm9ybWFuY2UuZ2V0RW50cmllc0J5VHlwZSgicmVzb3VyY2UiKS5tYXAoZSA9PiBlLm5hbWUpKSkgewogICAgICAgICAgICByZW1lbWJlclJlcXVlc3QocmVzb3VyY2UpOwogICAgICAgICAgICBpZiAoY2FwdHVyZWQuanNUb2tlbikgYnJlYWs7CiAgICAgICAgICB9CiAgICAgICAgfSBjYXRjaCAoXykge30KICAgICAgfQogICAgICBjb25zdCBnZXRTdXJsID0gKHVybFN0cikgPT4gewogICAgICAgIHRyeSB7CiAgICAgICAgICBjb25zdCB1ID0gbmV3IFVSTCh1cmxTdHIpOwogICAgICAgICAgY29uc3QgcGFydHMgPSB1LnBhdGhuYW1lLnNwbGl0KCIvIikuZmlsdGVyKEJvb2xlYW4pOwogICAgICAgICAgY29uc3QgaWR4ID0gcGFydHMuZmluZEluZGV4KHAgPT4gcC50b0xvd2VyQ2FzZSgpID09PSAicyIpOwogICAgICAgICAgaWYgKGlkeCA+PSAwICYmIHBhcnRzW2lkeCArIDFdKSB7CiAgICAgICAgICAgIGxldCBzID0gcGFydHNbaWR4ICsgMV07CiAgICAgICAgICAgIGlmIChzLnN0YXJ0c1dpdGgoIjEiKSAmJiBzLmxlbmd0aCA+IDE1KSBzID0gcy5zbGljZSgxKTsKICAgICAgICAgICAgcmV0dXJuIHM7CiAgICAgICAgICB9CiAgICAgICAgICBsZXQgcyA9IHUuc2VhcmNoUGFyYW1zLmdldCgic3VybCIpOwogICAgICAgICAgaWYgKHMgJiYgcy5zdGFydHNXaXRoKCIxIikgJiYgcy5sZW5ndGggPiAxNSkgcyA9IHMuc2xpY2UoMSk7CiAgICAgICAgICByZXR1cm4gczsKICAgICAgICB9IGNhdGNoIChfKSB7IHJldHVybiBudWxsOyB9CiAgICAgIH07CiAgICAgIGxldCBzdXJsID0gZ2V0U3VybChjdXJyZW50VXJsKSB8fCBnZXRTdXJsKHNoYXJlVXJsKTsKICAgICAgaWYgKCFzdXJsKSB7CiAgICAgICAgY29uc3QgbSA9IGh0bWwubWF0Y2goL3N1cmxbPTpdWyInXT8oW0EtWmEtejAtOV8tXXs4LH0pL2kpOwogICAgICAgIGlmIChtKSB7IHN1cmwgPSBtWzFdOyBpZiAoc3VybC5zdGFydHNXaXRoKCIxIikgJiYgc3VybC5sZW5ndGggPiAxNSkgc3VybCA9IHN1cmwuc2xpY2UoMSk7IH0KICAgICAgfQogICAgICBpZiAoIWNhcHR1cmVkLmRwTG9nSWQpIGNhcHR1cmVkLmRwTG9nSWQgPSBTdHJpbmcoRGF0ZS5ub3coKSkgKyBTdHJpbmcoTWF0aC5mbG9vcihNYXRoLnJhbmRvbSgpICogOTAwMCArIDEwMDApKTsKICAgICAgY29uc3Qgb3JpZ2luID0gKCgpID0+IHsgdHJ5IHsgcmV0dXJuIG5ldyBVUkwoY3VycmVudFVybCkub3JpZ2luOyB9IGNhdGNoIChfKSB7IHRyeSB7IHJldHVybiBuZXcgVVJMKHNoYXJlVXJsKS5vcmlnaW47IH0gY2F0Y2ggKF9fKSB7IHJldHVybiAiaHR0cHM6Ly93d3cudGVyYWJveC5jb20iOyB9IH0gfSkoKTsKICAgICAgY29uc3QgY29tbW9uUGFyYW1zID0gKCkgPT4gewogICAgICAgIGNvbnN0IHAgPSBuZXcgVVJMU2VhcmNoUGFyYW1zKHsgYXBwX2lkOiAiMjUwNTI4Iiwgd2ViOiAiMSIsIGNoYW5uZWw6ICJkdWJveCIsIGNsaWVudHR5cGU6ICIwIiwgImRwLWxvZ2lkIjogY2FwdHVyZWQuZHBMb2dJZCB9KTsKICAgICAgICBpZiAoY2FwdHVyZWQuanNUb2tlbikgcC5zZXQoImpzVG9rZW4iLCBjYXB0dXJlZC5qc1Rva2VuKTsKICAgICAgICByZXR1cm4gcDsKICAgICAgfTsKICAgICAgY29uc3QgcGFnZUZldGNoSnNvbiA9IGFzeW5jICh1cmwsIG9wdGlvbnMgPSB7fSkgPT4gcGFnZS5ldmFsdWF0ZShhc3luYyAodSwgb3B0cykgPT4gewogICAgICAgIHRyeSB7CiAgICAgICAgICBjb25zdCByZXNwID0gYXdhaXQgZmV0Y2godSwgeyBjcmVkZW50aWFsczogImluY2x1ZGUiLCBjYWNoZTogb3B0cy5jYWNoZSB8fCAiZGVmYXVsdCIsIGhlYWRlcnM6IHsgIkFjY2VwdCI6ICJhcHBsaWNhdGlvbi9qc29uLCB0ZXh0L3BsYWluLCAqLyoiLCAiWC1SZXF1ZXN0ZWQtV2l0aCI6ICJYTUxIdHRwUmVxdWVzdCIsIC4uLihvcHRzLmhlYWRlcnMgfHwge30pIH0sIG1ldGhvZDogb3B0cy5tZXRob2QgfHwgIkdFVCIsIGJvZHk6IG9wdHMuYm9keSB8fCB1bmRlZmluZWQgfSk7CiAgICAgICAgICBjb25zdCB0ZXh0ID0gYXdhaXQgcmVzcC50ZXh0KCk7CiAgICAgICAgICBsZXQgZGF0YSA9IG51bGw7CiAgICAgICAgICB0cnkgeyBkYXRhID0gSlNPTi5wYXJzZSh0ZXh0KTsgfSBjYXRjaCAoXykgeyByZXR1cm4geyBvazogZmFsc2UsIHN0YXR1czogcmVzcC5zdGF0dXMsIG5vbkpzb246IHRydWUsIHByZXZpZXc6IHRleHQuc2xpY2UoMCwgMzAwKSB9OyB9CiAgICAgICAgICByZXR1cm4geyBvazogcmVzcC5vaywgc3RhdHVzOiByZXNwLnN0YXR1cywgZGF0YSB9OwogICAgICAgIH0gY2F0Y2ggKGUpIHsgcmV0dXJuIHsgb2s6IGZhbHNlLCBlcnJvcjogU3RyaW5nKGUpIH07IH0KICAgICAgfSwgdXJsLCBvcHRpb25zKTsKICAgICAgbGV0IGluZm8gPSBjYXB0dXJlZC5zaG9ydHVybGluZm87CiAgICAgIGxldCBsaXN0RGF0YSA9IGNhcHR1cmVkLnNoYXJlTGlzdDsKICAgICAgaWYgKCghaW5mbyB8fCBOdW1iZXIoaW5mby5lcnJubykgIT09IDApICYmIGNhcHR1cmVkLmpzVG9rZW4gJiYgc3VybCkgewogICAgICAgIGNvbnN0IGluZm9VcmwgPSBuZXcgVVJMKCIvYXBpL3Nob3J0dXJsaW5mbyIsIG9yaWdpbik7CiAgICAgICAgY29uc3QgcGFyYW1zID0gY29tbW9uUGFyYW1zKCk7IHBhcmFtcy5zZXQoInNob3J0dXJsIiwgc3VybCk7IHBhcmFtcy5zZXQoInJvb3QiLCAiMSIpOyBwYXJhbXMuc2V0KCJzY2VuZSIsICIiKTsKICAgICAgICBmb3IgKGNvbnN0IFtrLCB2XSBvZiBwYXJhbXMuZW50cmllcygpKSBpbmZvVXJsLnNlYXJjaFBhcmFtcy5zZXQoaywgdik7CiAgICAgICAgY29uc3QgcmVzID0gYXdhaXQgcGFnZUZldGNoSnNvbihpbmZvVXJsLnRvU3RyaW5nKCksIHsgaGVhZGVyczogeyAiUmVmZXJlciI6IGN1cnJlbnRVcmwgfHwgc2hhcmVVcmwgfSB9KTsKICAgICAgICBpZiAocmVzICYmIHJlcy5kYXRhICYmICFyZXMubm9uSnNvbikgaW5mbyA9IHJlcy5kYXRhOwogICAgICB9CiAgICAgIGlmICgoIWluZm8gfHwgTnVtYmVyKGluZm8/LmVycm5vKSAhPT0gMCkgJiYgY2FwdHVyZWQuanNUb2tlbiAmJiBzdXJsKSB7CiAgICAgICAgY29uc3QgbGlzdFVybCA9IG5ldyBVUkwoIi9zaGFyZS9saXN0Iiwgb3JpZ2luKTsKICAgICAgICBjb25zdCBwYXJhbXMgPSBjb21tb25QYXJhbXMoKTsgcGFyYW1zLnNldCgic2hvcnR1cmwiLCBzdXJsKTsgcGFyYW1zLnNldCgicm9vdCIsICIxIik7IHBhcmFtcy5zZXQoInBhZ2UiLCAiMSIpOyBwYXJhbXMuc2V0KCJudW0iLCAiMTAwIik7CiAgICAgICAgZm9yIChjb25zdCBbaywgdl0gb2YgcGFyYW1zLmVudHJpZXMoKSkgbGlzdFVybC5zZWFyY2hQYXJhbXMuc2V0KGssIHYpOwogICAgICAgIGNvbnN0IHJlcyA9IGF3YWl0IHBhZ2VGZXRjaEpzb24obGlzdFVybC50b1N0cmluZygpLCB7IGhlYWRlcnM6IHsgIlJlZmVyZXIiOiBjdXJyZW50VXJsIHx8IHNoYXJlVXJsIH0gfSk7CiAgICAgICAgaWYgKHJlcyAmJiByZXMuZGF0YSAmJiAhcmVzLm5vbkpzb24gJiYgTnVtYmVyKHJlcy5kYXRhLmVycm5vKSA9PT0gMCAmJiBBcnJheS5pc0FycmF5KHJlcy5kYXRhLmxpc3QpKSB7CiAgICAgICAgICBsaXN0RGF0YSA9IHJlcy5kYXRhOwogICAgICAgICAgaW5mbyA9IHsgZXJybm86IDAsIGxpc3Q6IGxpc3REYXRhLmxpc3QsIHNoYXJlaWQ6IGxpc3REYXRhLnNoYXJlX2lkIHx8IGxpc3REYXRhLnNoYXJlaWQsIHVrOiBsaXN0RGF0YS51aywgc2lnbjogbGlzdERhdGEuc2lnbiwgdGltZXN0YW1wOiBsaXN0RGF0YS50aW1lc3RhbXAsIHJhbmRzazogbGlzdERhdGEucmFuZHNrIH07CiAgICAgICAgfQogICAgICB9CiAgICAgIGlmICghY2FwdHVyZWQuanNUb2tlbikgdGhyb3cgbmV3IEVycm9yKCJqc1Rva2VuIFRlcmFib3ggdGlkYWsgZGl0ZW11a2FuIik7CiAgICAgIGlmICghc3VybCkgdGhyb3cgbmV3IEVycm9yKCJLb2RlIHNoYXJlIChzdXJsKSB0aWRhayBkaXRlbXVrYW4iKTsKICAgICAgaWYgKCFpbmZvIHx8IE51bWJlcihpbmZvLmVycm5vKSAhPT0gMCkgdGhyb3cgbmV3IEVycm9yKCJUZXJhYm94IG1ldGFkYXRhIGdhZ2FsIChlcnJubyAiICsgKGluZm8/LmVycm5vID8/ICI/IikgKyAiKTogIiArIChpbmZvPy5zaG93X21zZyB8fCBpbmZvPy5lcnJtc2cgfHwgInVua25vd24iKSk7CiAgICAgIGNvbnN0IGZpbGVMaXN0ID0gQXJyYXkuaXNBcnJheShpbmZvLmxpc3QpID8gaW5mby5saXN0IDogW107CiAgICAgIGNvbnN0IGZpbGVzID0gZmlsZUxpc3QuZmlsdGVyKGl0ZW0gPT4gTnVtYmVyKGl0ZW0/LmlzZGlyIHx8IDApID09PSAwKTsKICAgICAgaWYgKCFmaWxlcy5sZW5ndGggJiYgZmlsZUxpc3QubGVuZ3RoKSBmaWxlcy5wdXNoKGZpbGVMaXN0WzBdKTsKICAgICAgaWYgKCFmaWxlcy5sZW5ndGgpIHRocm93IG5ldyBFcnJvcigiVGlkYWsgYWRhIGZpbGUgZGkgc2hhcmUiKTsKICAgICAgLy8gUGFzdGlrYW4gdGltZXN0YW1wIEZSRVNIOiBzZXJ2ZXIgVGVyYWJveCBrYWRhbmcgbWVuZ2VtYmFsaWthbiB0aW1lc3RhbXAKICAgICAgLy8gYmFzaSAofjEgamFtKS4gU2lnbiB0ZXJpa2F0IEVYQUNUIHBhZGEgbmlsYWkgdGltZXN0YW1wIHRlcnNlYnV0LCBqYWRpCiAgICAgIC8vIHVsYW5naSBmZXRjaCBoaW5nZ2EgZGFwYXQgeWFuZyBmcmVzaCwgbGFsdSBwYWthaSBuaWxhaSBwZXJzaXMgaXR1LgogICAgICBjb25zdCB0c0lzRnJlc2ggPSAodHMpID0+IHsKICAgICAgICBjb25zdCBuID0gTnVtYmVyKHRzKTsKICAgICAgICByZXR1cm4gISFuICYmIE1hdGguYWJzKG4gLSBNYXRoLmZsb29yKERhdGUubm93KCkgLyAxMDAwKSkgPCAzMDA7CiAgICAgIH07CiAgICAgIGlmIChjYXB0dXJlZC5qc1Rva2VuICYmIHN1cmwgJiYgIXRzSXNGcmVzaChpbmZvICYmIGluZm8udGltZXN0YW1wKSkgewogICAgICAgIGZvciAobGV0IGF0dGVtcHQgPSAwOyBhdHRlbXB0IDwgMyAmJiAhdHNJc0ZyZXNoKGluZm8gJiYgaW5mby50aW1lc3RhbXApOyBhdHRlbXB0KyspIHsKICAgICAgICAgIHRyeSB7CiAgICAgICAgICAgIGNvbnN0IGZyZXNoVXJsID0gbmV3IFVSTCgiL2FwaS9zaG9ydHVybGluZm8iLCBvcmlnaW4pOwogICAgICAgICAgICBjb25zdCBmcCA9IGNvbW1vblBhcmFtcygpOwogICAgICAgICAgICBmcC5zZXQoInNob3J0dXJsIiwgc3VybCk7IGZwLnNldCgicm9vdCIsICIxIik7IGZwLnNldCgic2NlbmUiLCAiIik7CiAgICAgICAgICAgIGZwLnNldCgiX3QiLCBTdHJpbmcoRGF0ZS5ub3coKSkgKyAiXyIgKyBhdHRlbXB0KTsKICAgICAgICAgICAgZm9yIChjb25zdCBbaywgdl0gb2YgZnAuZW50cmllcygpKSBmcmVzaFVybC5zZWFyY2hQYXJhbXMuc2V0KGssIHYpOwogICAgICAgICAgICBjb25zdCBmcmVzID0gYXdhaXQgcGFnZUZldGNoSnNvbihmcmVzaFVybC50b1N0cmluZygpLCB7IGhlYWRlcnM6IHsgIlJlZmVyZXIiOiBjdXJyZW50VXJsIHx8IHNoYXJlVXJsIH0sIGNhY2hlOiAibm8tc3RvcmUiIH0pOwogICAgICAgICAgICBpZiAoZnJlcyAmJiBmcmVzLmRhdGEgJiYgIWZyZXMubm9uSnNvbiAmJiBOdW1iZXIoZnJlcy5kYXRhLmVycm5vKSA9PT0gMCkgewogICAgICAgICAgICAgIGluZm8gPSBmcmVzLmRhdGE7CiAgICAgICAgICAgIH0KICAgICAgICAgIH0gY2F0Y2ggKF8pIHt9CiAgICAgICAgICBpZiAoIXRzSXNGcmVzaChpbmZvICYmIGluZm8udGltZXN0YW1wKSAmJiBhdHRlbXB0IDwgMikgewogICAgICAgICAgICBhd2FpdCBuZXcgUHJvbWlzZSgocikgPT4gc2V0VGltZW91dChyLCAxNTAwKSk7CiAgICAgICAgICB9CiAgICAgICAgfQogICAgICB9CiAgICAgIGNvbnN0IHNoYXJlSWQgPSBpbmZvLnNoYXJlaWQgPz8gaW5mby5zaGFyZV9pZDsKICAgICAgY29uc3QgdWsgPSBpbmZvLnVrID8/IGluZm8uc2hhcmVfdWs7CiAgICAgIGNvbnN0IHNpZ24gPSBpbmZvLnNpZ247CiAgICAgIGNvbnN0IHRpbWVzdGFtcCA9IGluZm8udGltZXN0YW1wOwogICAgICBpZiAoIXNoYXJlSWQgfHwgIXVrIHx8ICFzaWduIHx8ICF0aW1lc3RhbXApIHsKICAgICAgICBjb25zdCByZXN1bHRzID0gW107CiAgICAgICAgZm9yIChjb25zdCBmIG9mIGZpbGVzKSBpZiAoZi5kbGluaykgcmVzdWx0cy5wdXNoKHsgZmlsZW5hbWU6IGYuc2VydmVyX2ZpbGVuYW1lIHx8ICJmaWxlIiwgc2l6ZTogZi5zaXplLCBkbGluazogZi5kbGluaywgdGh1bWI6IHBpY2tUaHVtYihmKSB9KTsKICAgICAgICBmb3IgKGNvbnN0IGRyIG9mIGNhcHR1cmVkLmRvd25sb2FkUmVzcG9uc2VzKSB7CiAgICAgICAgICBjb25zdCBsc3QgPSBBcnJheS5pc0FycmF5KGRyLmRhdGE/Lmxpc3QpID8gZHIuZGF0YS5saXN0IDogW107CiAgICAgICAgICBmb3IgKGNvbnN0IGl0ZW0gb2YgbHN0KSBpZiAoaXRlbS5kbGluaykgcmVzdWx0cy5wdXNoKHsgZmlsZW5hbWU6IGl0ZW0uc2VydmVyX2ZpbGVuYW1lIHx8ICJmaWxlIiwgc2l6ZTogaXRlbS5zaXplLCBkbGluazogaXRlbS5kbGluaywgdGh1bWI6IHBpY2tUaHVtYihpdGVtKSB9KTsKICAgICAgICAgIGlmICh0eXBlb2YgZHIuZGF0YT8uZGxpbmsgPT09ICJzdHJpbmciKSByZXN1bHRzLnB1c2goeyBmaWxlbmFtZTogImZpbGUiLCBzaXplOiBudWxsLCBkbGluazogZHIuZGF0YS5kbGluaywgdGh1bWI6IG51bGwgfSk7CiAgICAgICAgfQogICAgICAgIGlmIChyZXN1bHRzLmxlbmd0aCkgcmV0dXJuIHsgZGF0YTogeyBkbGluazogcmVzdWx0c1swXS5kbGluaywgZmlsZXM6IHJlc3VsdHMsIGZpbGVuYW1lOiByZXN1bHRzWzBdLmZpbGVuYW1lIH0sIHR5cGU6ICJhcHBsaWNhdGlvbi9qc29uIiB9OwogICAgICAgIHRocm93IG5ldyBFcnJvcigiTWV0YWRhdGEgZG93bmxvYWQgdGlkYWsgbGVuZ2thcCAoc2hhcmVpZC91ay9zaWduL3RpbWVzdGFtcCkiKTsKICAgICAgfQogICAgICBsZXQgc2VrZXkgPSBudWxsOwogICAgICB0cnkgewogICAgICAgIGNvbnN0IGNvb2tpZVN0ciA9IGF3YWl0IHBhZ2UuZXZhbHVhdGUoKCkgPT4gZG9jdW1lbnQuY29va2llIHx8ICIiKTsKICAgICAgICBjb25zdCBjb29raWVNYXAgPSB7fTsKICAgICAgICBjb29raWVTdHIuc3BsaXQoIjsiKS5mb3JFYWNoKHBhcnQgPT4geyBjb25zdCBpZHggPSBwYXJ0LmluZGV4T2YoIj0iKTsgaWYgKGlkeCA+IDApIGNvb2tpZU1hcFtwYXJ0LnNsaWNlKDAsIGlkeCkudHJpbSgpXSA9IHBhcnQuc2xpY2UoaWR4ICsgMSkudHJpbSgpOyB9KTsKICAgICAgICBzZWtleSA9IGNvb2tpZU1hcFsicmFuZHNrIl0gfHwgY29va2llTWFwWyJCT1hDTE5EIl0gfHwgY29va2llTWFwWyJzZWtleSJdIHx8IG51bGw7CiAgICAgICAgaWYgKHNla2V5KSB0cnkgeyBzZWtleSA9IGRlY29kZVVSSUNvbXBvbmVudChzZWtleSk7IH0gY2F0Y2ggKF8pIHt9CiAgICAgIH0gY2F0Y2ggKF8pIHt9CiAgICAgIGlmICghc2VrZXkgJiYgaW5mbz8ucmFuZHNrKSB7IHNla2V5ID0gaW5mby5yYW5kc2s7IHRyeSB7IHNla2V5ID0gZGVjb2RlVVJJQ29tcG9uZW50KFN0cmluZyhzZWtleSkpOyB9IGNhdGNoIChfKSB7fSB9CiAgICAgIGlmICghc2VrZXkgJiYgbGlzdERhdGE/LnJhbmRzaykgeyBzZWtleSA9IGxpc3REYXRhLnJhbmRzazsgdHJ5IHsgc2VrZXkgPSBkZWNvZGVVUklDb21wb25lbnQoU3RyaW5nKHNla2V5KSk7IH0gY2F0Y2ggKF8pIHt9IH0KICAgICAgY29uc3QgcmVzdWx0cyA9IFtdOwogICAgICBjb25zdCBkZWJ1Z0xvZyA9IFt7IHN0ZXA6ICJzZWtleSIsIGhhc1Nla2V5OiAhIXNla2V5LCBzZWtleUxlbjogc2VrZXkgPyBTdHJpbmcoc2VrZXkpLmxlbmd0aCA6IDAsIGhhc05kdXM6ICEhaW5qZWN0ZWROZHVzIH0sCiAgICAgICAgeyBzdGVwOiAidHNpbmZvIiwgaW5mb1RzOiBpbmZvICYmIGluZm8udGltZXN0YW1wLCBicm93c2VySVNPOiBuZXcgRGF0ZSgpLnRvSVNPU3RyaW5nKCkgfV07CiAgICAgIGNvbnN0IGV4dHJhY3REbGlua0Zyb21QYXlsb2FkID0gKHBheWxvYWQsIGZzSWQpID0+IHsKICAgICAgICBpZiAoIXBheWxvYWQgfHwgdHlwZW9mIHBheWxvYWQgIT09ICJvYmplY3QiKSByZXR1cm4gbnVsbDsKICAgICAgICBpZiAodHlwZW9mIHBheWxvYWQuZGxpbmsgPT09ICJzdHJpbmciICYmIHBheWxvYWQuZGxpbmsuc3RhcnRzV2l0aCgiaHR0cCIpKSByZXR1cm4gcGF5bG9hZC5kbGluazsKICAgICAgICBpZiAoQXJyYXkuaXNBcnJheShwYXlsb2FkLmxpc3QpKSB7CiAgICAgICAgICBjb25zdCBtYXRjaCA9IHBheWxvYWQubGlzdC5maW5kKGl0ZW0gPT4gU3RyaW5nKGl0ZW0uZnNfaWQpID09PSBTdHJpbmcoZnNJZCkpIHx8IHBheWxvYWQubGlzdFswXTsKICAgICAgICAgIGlmIChtYXRjaD8uZGxpbms/LnN0YXJ0c1dpdGg/LigiaHR0cCIpKSByZXR1cm4gbWF0Y2guZGxpbms7CiAgICAgICAgfQogICAgICAgIGlmIChBcnJheS5pc0FycmF5KHBheWxvYWQuZGxpbmspKSB7CiAgICAgICAgICBjb25zdCBtYXRjaCA9IHBheWxvYWQuZGxpbmsuZmluZChpdGVtID0+IFN0cmluZyhpdGVtLmZzX2lkKSA9PT0gU3RyaW5nKGZzSWQpKSB8fCBwYXlsb2FkLmRsaW5rWzBdOwogICAgICAgICAgaWYgKG1hdGNoPy5kbGluaz8uc3RhcnRzV2l0aD8uKCJodHRwIikpIHJldHVybiBtYXRjaC5kbGluazsKICAgICAgICB9CiAgICAgICAgcmV0dXJuIG51bGw7CiAgICAgIH07CiAgICAgIC8vIFBFTlRJTkc6IHBha2FpIEVYQUNUIGluZm8udGltZXN0YW1wIOKAlCBzaWduIHRlcmlrYXQgcGFkYSBuaWxhaSBpbmkuCiAgICAgIC8vIE1lbmdnYW50aSBkZW5nYW4gRGF0ZS5ub3coKSBtZW1idWF0IHNpZ25hdHVyZSB0aWRhayB2YWxpZCAoZXJybm8gMikuCiAgICAgIGNvbnN0IHRyeVNoYXJlRG93bmxvYWQgPSBhc3luYyAoZnNJZCkgPT4gewogICAgICAgIGZvciAoY29uc3QgZXAgb2YgWyIvc2hhcmUvZG93bmxvYWQiLCAiL2FwaS9zaGFyZWRvd25sb2FkIl0pIHsKICAgICAgICAgIGNvbnN0IGRvd25sb2FkVXJsID0gbmV3IFVSTChlcCwgb3JpZ2luKTsKICAgICAgICAgIGNvbnN0IHBhcmFtcyA9IGNvbW1vblBhcmFtcygpOwogICAgICAgICAgcGFyYW1zLnNldCgic2hhcmVpZCIsIFN0cmluZyhzaGFyZUlkKSk7IHBhcmFtcy5zZXQoInNpZ24iLCBTdHJpbmcoc2lnbikpOyBwYXJhbXMuc2V0KCJ0aW1lc3RhbXAiLCBTdHJpbmcodGltZXN0YW1wKSk7CiAgICAgICAgICBwYXJhbXMuc2V0KCJ1ayIsIFN0cmluZyh1aykpOyBwYXJhbXMuc2V0KCJwcmltYXJ5aWQiLCBTdHJpbmcoc2hhcmVJZCkpOwogICAgICAgICAgZm9yIChjb25zdCBbaywgdl0gb2YgcGFyYW1zLmVudHJpZXMoKSkgZG93bmxvYWRVcmwuc2VhcmNoUGFyYW1zLnNldChrLCB2KTsKICAgICAgICAgIGNvbnN0IGJhc2VzID0gWwogICAgICAgICAgICB7IHByb2R1Y3Q6ICJzaGFyZSIsIG5vemlwOiAiMCIsIGZpZF9saXN0OiAiWyIgKyBTdHJpbmcoZnNJZCkgKyAiXSIsIHVrOiBTdHJpbmcodWspLCBwcmltYXJ5aWQ6IFN0cmluZyhzaGFyZUlkKSwgdHlwZTogIm5vbGltaXQiIH0sCiAgICAgICAgICAgIHsgcHJvZHVjdDogInNoYXJlIiwgbm96aXA6ICIwIiwgZmlkX2xpc3Q6IEpTT04uc3RyaW5naWZ5KFtOdW1iZXIoZnNJZCldKSwgdWs6IFN0cmluZyh1ayksIHByaW1hcnlpZDogU3RyaW5nKHNoYXJlSWQpLCB0eXBlOiAibm9saW1pdCIgfQogICAgICAgICAgXTsKICAgICAgICAgIGNvbnN0IGJvZHlWYXJpYW50cyA9IFtdOwogICAgICAgICAgZm9yIChjb25zdCBiIG9mIGJhc2VzKSB7CiAgICAgICAgICAgIGJvZHlWYXJpYW50cy5wdXNoKHsgLi4uYiB9KTsKICAgICAgICAgICAgaWYgKHNla2V5KSB7CiAgICAgICAgICAgICAgYm9keVZhcmlhbnRzLnB1c2goeyAuLi5iLCBleHRyYTogSlNPTi5zdHJpbmdpZnkoeyBzZWtleSB9KSB9KTsKICAgICAgICAgICAgICBib2R5VmFyaWFudHMucHVzaCh7IC4uLmIsIHNla2V5IH0pOwogICAgICAgICAgICAgIGJvZHlWYXJpYW50cy5wdXNoKHsgLi4uYiwgZXh0cmE6IEpTT04uc3RyaW5naWZ5KHsgc2VrZXkgfSksIHNla2V5IH0pOwogICAgICAgICAgICB9CiAgICAgICAgICB9CiAgICAgICAgICBmb3IgKGNvbnN0IGJvZHlPYmogb2YgYm9keVZhcmlhbnRzKSB7CiAgICAgICAgICAgIGNvbnN0IHJlcyA9IGF3YWl0IHBhZ2VGZXRjaEpzb24oZG93bmxvYWRVcmwudG9TdHJpbmcoKSwgewogICAgICAgICAgICAgIG1ldGhvZDogIlBPU1QiLAogICAgICAgICAgICAgIGhlYWRlcnM6IHsgIkNvbnRlbnQtVHlwZSI6ICJhcHBsaWNhdGlvbi94LXd3dy1mb3JtLXVybGVuY29kZWQ7IGNoYXJzZXQ9VVRGLTgiLCAiUmVmZXJlciI6IGN1cnJlbnRVcmwgfHwgc2hhcmVVcmwsICJPcmlnaW4iOiBvcmlnaW4gfSwKICAgICAgICAgICAgICBib2R5OiBuZXcgVVJMU2VhcmNoUGFyYW1zKGJvZHlPYmopLnRvU3RyaW5nKCkKICAgICAgICAgICAgfSk7CiAgICAgICAgICAgIGlmICghcmVzPy5kYXRhIHx8IHJlcy5ub25Kc29uKSB7IGRlYnVnTG9nLnB1c2goeyBlcCwgZXJybm86IHJlcz8uZGF0YT8uZXJybm8sIG5vbkpzb246ICEhcmVzPy5ub25Kc29uLCBlcnI6IHJlcz8uZXJyb3IgfSk7IGNvbnRpbnVlOyB9CiAgICAgICAgICAgIGNvbnN0IGRsaW5rID0gZXh0cmFjdERsaW5rRnJvbVBheWxvYWQocmVzLmRhdGEsIGZzSWQpOwogICAgICAgICAgICBkZWJ1Z0xvZy5wdXNoKHsgZXAsIGVycm5vOiByZXMuZGF0YS5lcnJubywgaGFzRGxpbms6ICEhZGxpbmssIGhhc1Nla2V5OiAhIShib2R5T2JqLmV4dHJhIHx8IGJvZHlPYmouc2VrZXkpIH0pOwogICAgICAgICAgICBpZiAoZGxpbmsgJiYgKHJlcy5kYXRhLmVycm5vID09PSAwIHx8IHJlcy5kYXRhLmVycm5vID09IG51bGwpKSByZXR1cm4gZGxpbms7CiAgICAgICAgICB9CiAgICAgICAgfQogICAgICAgIHJldHVybiBudWxsOwogICAgICB9OwogICAgICBmb3IgKGNvbnN0IGZpbGUgb2YgZmlsZXMuc2xpY2UoMCwgMTApKSB7CiAgICAgICAgY29uc3QgZnNJZCA9IGZpbGUuZnNfaWQ7CiAgICAgICAgaWYgKCFmc0lkKSBjb250aW51ZTsKICAgICAgICBpZiAodHlwZW9mIGZpbGUuZGxpbmsgPT09ICJzdHJpbmciICYmIGZpbGUuZGxpbmsuc3RhcnRzV2l0aCgiaHR0cCIpKSB7CiAgICAgICAgICByZXN1bHRzLnB1c2goeyBmaWxlbmFtZTogZmlsZS5zZXJ2ZXJfZmlsZW5hbWUgfHwgZmlsZS5maWxlbmFtZSB8fCAiZmlsZSIsIHNpemU6IGZpbGUuc2l6ZSwgZGxpbms6IGZpbGUuZGxpbmssIHRodW1iOiBwaWNrVGh1bWIoZmlsZSkgfSk7CiAgICAgICAgICBjb250aW51ZTsKICAgICAgICB9CiAgICAgICAgbGV0IGRsaW5rID0gYXdhaXQgdHJ5U2hhcmVEb3dubG9hZChmc0lkKTsKICAgICAgICBpZiAoIWRsaW5rKSBmb3IgKGNvbnN0IGRyIG9mIGNhcHR1cmVkLmRvd25sb2FkUmVzcG9uc2VzKSB7IGRsaW5rID0gZXh0cmFjdERsaW5rRnJvbVBheWxvYWQoZHIuZGF0YSwgZnNJZCk7IGlmIChkbGluaykgYnJlYWs7IH0KICAgICAgICBpZiAoZGxpbmspIHJlc3VsdHMucHVzaCh7IGZpbGVuYW1lOiBmaWxlLnNlcnZlcl9maWxlbmFtZSB8fCBmaWxlLmZpbGVuYW1lIHx8ICJmaWxlIiwgc2l6ZTogZmlsZS5zaXplLCBkbGluaywgdGh1bWI6IHBpY2tUaHVtYihmaWxlKSB9KTsKICAgICAgfQogICAgICBpZiAoIXJlc3VsdHMubGVuZ3RoKSB0aHJvdyBuZXcgRXJyb3IoIlRlcmFib3ggQVBJIHNlbGVzYWkgdGV0YXBpIGRsaW5rIGtvc29uZy4gZGVidWc9IiArIEpTT04uc3RyaW5naWZ5KGRlYnVnTG9nKS5zbGljZSgwLCA5MDApKTsKICAgICAgcmV0dXJuIHsgZGF0YTogeyBkbGluazogcmVzdWx0c1swXS5kbGluaywgZmlsZW5hbWU6IHJlc3VsdHNbMF0uZmlsZW5hbWUsIGZpbGVzOiByZXN1bHRzIH0sIHR5cGU6ICJhcHBsaWNhdGlvbi9qc29uIiB9OwogICAgfTsnJycKICAgIGNvZGUgPSBjb2RlLnJlcGxhY2UoIl9fU0hBUkVfVVJMX18iLCBzYWZlX3VybCkucmVwbGFjZSgiX19ORFVTX18iLCBzYWZlX25kdXMpCiAgICB0cnk6CiAgICAgICAgcmVzdWx0ID0gY2xpZW50Ll9wb3N0X2Z1bmN0aW9uKGNvZGUsIHRpbWVvdXRfbXM9NTAwMDApCiAgICBleGNlcHQgRXhjZXB0aW9uIGFzIGV4YzoKICAgICAgICBmYiA9IF90cnlfcHVibGljX2ZhbGxiYWNrcyhzaGFyZV91cmwpCiAgICAgICAgaWYgZmIgYW5kIGZiLmdldCgic3VjY2VzcyIpOgogICAgICAgICAgICByZXR1cm4gZmIKICAgICAgICByZXR1cm4geyJzdWNjZXNzIjogRmFsc2UsICJlcnJvciI6IGYiQnJvd3Nlcmxlc3MgZXJyb3I6IHtfY2xlYW5fYnJvd3Nlcmxlc3NfZXJyb3IoZXhjKX0ifQogICAgaWYgcmVzdWx0LmdldCgiZXJyb3IiKToKICAgICAgICBmYiA9IF90cnlfcHVibGljX2ZhbGxiYWNrcyhzaGFyZV91cmwpCiAgICAgICAgaWYgZmIgYW5kIGZiLmdldCgic3VjY2VzcyIpOgogICAgICAgICAgICByZXR1cm4gZmIKICAgICAgICByZXR1cm4geyJzdWNjZXNzIjogRmFsc2UsICJlcnJvciI6IGYiQnJvd3Nlcmxlc3MgZXJyb3I6IHtfY2xlYW5fYnJvd3Nlcmxlc3NfZXJyb3IocmVzdWx0LmdldCgnZXJyb3InKSl9In0KICAgIGZpbGVzID0gX2V4dHJhY3RfZmlsZXMocmVzdWx0KQogICAgZGxpbmsgPSBfZXh0cmFjdF9kbGluayhyZXN1bHQpCiAgICBpZiBmaWxlczoKICAgICAgICByZXR1cm4geyJzdWNjZXNzIjogVHJ1ZSwgImRsaW5rIjogZmlsZXNbMF1bImRsaW5rIl0sICJmaWxlcyI6IGZpbGVzLCAiZmlsZW5hbWUiOiBmaWxlc1swXS5nZXQoImZpbGVuYW1lIil9CiAgICBpZiBkbGluazoKICAgICAgICByZXR1cm4geyJzdWNjZXNzIjogVHJ1ZSwgImRsaW5rIjogZGxpbmssICJmaWxlcyI6IFt7ImZpbGVuYW1lIjogImZpbGUiLCAiZGxpbmsiOiBkbGlua31dfQogICAgZmIgPSBfdHJ5X3B1YmxpY19mYWxsYmFja3Moc2hhcmVfdXJsKQogICAgaWYgZmIgYW5kIGZiLmdldCgic3VjY2VzcyIpOgogICAgICAgIHJldHVybiBmYgogICAgcmV0dXJuIHsic3VjY2VzcyI6IEZhbHNlLCAiZXJyb3IiOiAiQnJvd3Nlcmxlc3Mgc2VsZXNhaSB0ZXRhcGkgZGlyZWN0IGRvd25sb2FkIGxpbmsgdGlkYWsgZGl0ZW11a2FuLiIsICJkZWJ1ZyI6IHJlc3VsdH0K
+import json
+import os
+import re
+from urllib import request, error
+from urllib.parse import quote, urlparse, parse_qs
+
+BROWSERLESS_TOKEN = os.environ.get("BROWSERLESS_TOKEN", "").strip()
+BROWSERLESS_ENDPOINT = "https://production-sfo.browserless.io/function"
+
+PUBLIC_FALLBACKS = [
+    "https://terabox-worker.robinkumarshakya103.workers.dev/api?url={url}",
+    "https://tbx-proxy.shakir-ansarii075.workers.dev/?mode=resolve&surl={surl}",
+]
+
+
+class BrowserlessClient:
+    def _post_function(self, code: str, timeout_ms: int = 50000):
+        if not BROWSERLESS_TOKEN:
+            raise RuntimeError("BROWSERLESS_TOKEN belum dikonfigurasi")
+        endpoint = (
+            f"{BROWSERLESS_ENDPOINT}?token={quote(BROWSERLESS_TOKEN, safe='')}"
+            f"&timeout={timeout_ms}"
+        )
+        req = request.Request(
+            endpoint,
+            data=code.encode("utf-8"),
+            headers={"Content-Type": "application/javascript", "Cache-Control": "no-cache"},
+            method="POST",
+        )
+        try:
+            with request.urlopen(req, timeout=(timeout_ms / 1000) + 20) as resp:
+                raw = resp.read().decode("utf-8", "ignore")
+                try:
+                    return json.loads(raw)
+                except json.JSONDecodeError:
+                    return {"data": raw}
+        except error.HTTPError as exc:
+            raw = exc.read().decode("utf-8", "ignore")
+            try:
+                detail = json.loads(raw)
+            except json.JSONDecodeError:
+                detail = raw or f"HTTP {exc.code}: {exc.reason}"
+            return {"error": detail, "http_status": exc.code}
+        except Exception as exc:
+            return {"error": str(exc)}
+
+
+def _extract_surl(url: str):
+    try:
+        parsed = urlparse(url)
+        m = re.search(r"/s/([A-Za-z0-9_-]+)", parsed.path)
+        if m:
+            surl = m.group(1)
+            return surl[1:] if surl.startswith("1") and len(surl) > 15 else surl
+        qs = parse_qs(parsed.query)
+        if "surl" in qs and qs["surl"]:
+            surl = qs["surl"][0]
+            return surl[1:] if surl.startswith("1") and len(surl) > 15 else surl
+    except Exception:
+        pass
+    return None
+
+
+def _extract_dlink(value):
+    if isinstance(value, dict):
+        for key in ("dlink", "downloadUrl", "download_url", "original_download_url", "direct_link", "location"):
+            candidate = value.get(key)
+            if isinstance(candidate, str) and candidate.startswith(("http://", "https://")):
+                return candidate
+            found = _extract_dlink(candidate)
+            if found:
+                return found
+        for child in value.values():
+            found = _extract_dlink(child)
+            if found:
+                return found
+        return None
+    if isinstance(value, list):
+        for child in value:
+            found = _extract_dlink(child)
+            if found:
+                return found
+    return None
+
+
+def _extract_files(value):
+    files = []
+    def walk(obj):
+        if isinstance(obj, dict):
+            name = obj.get("server_filename") or obj.get("file_name") or obj.get("filename") or obj.get("name") or obj.get("title")
+            dlink = obj.get("dlink") or obj.get("download_url") or obj.get("original_download_url") or obj.get("direct_link")
+            size = obj.get("size") or obj.get("formatted_size")
+            if name and isinstance(dlink, str) and dlink.startswith("http"):
+                thumb = obj.get("thumb")
+                if not isinstance(thumb, str):
+                    th = obj.get("thumbs")
+                    if isinstance(th, dict):
+                        cand = th.get("url3") or th.get("url2") or th.get("url1")
+                        thumb = cand if isinstance(cand, str) else None
+                files.append({"filename": name, "size": size, "dlink": dlink,
+                              "thumb": thumb if isinstance(thumb, str) else None})
+            for v in obj.values():
+                walk(v)
+        elif isinstance(obj, list):
+            for item in obj:
+                walk(item)
+    walk(value)
+    seen, out = set(), []
+    for f in files:
+        if f["dlink"] not in seen:
+            seen.add(f["dlink"])
+            out.append(f)
+    return out
+
+
+def _http_get_json(url: str, timeout: int = 25):
+    try:
+        req = request.Request(url, headers={"User-Agent": "Mozilla/5.0", "Accept": "application/json"}, method="GET")
+        with request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8", "ignore"))
+    except Exception:
+        return None
+
+
+def _try_public_fallbacks(share_url: str):
+    surl = _extract_surl(share_url) or ""
+    for template in PUBLIC_FALLBACKS:
+        try:
+            api_url = template.format(url=quote(share_url, safe=""), surl=surl)
+            data = _http_get_json(api_url)
+            if not data:
+                continue
+            if data.get("success") and data.get("files"):
+                files = []
+                for f in data["files"]:
+                    dlink = f.get("original_download_url") or f.get("download_url") or f.get("dlink")
+                    if dlink:
+                        files.append({"filename": f.get("file_name") or f.get("filename") or "file", "size": f.get("size"), "dlink": dlink})
+                if files:
+                    return {"success": True, "dlink": files[0]["dlink"], "files": files}
+            if data.get("data") and not data.get("error"):
+                d = data["data"]
+                dlink = d.get("dlink") or d.get("download_url")
+                if dlink:
+                    return {"success": True, "dlink": dlink, "files": [{"filename": d.get("name") or "file", "size": d.get("size"), "dlink": dlink}]}
+        except Exception:
+            continue
+    return None
+
+
+
+def _clean_browserless_error(msg):
+    """Rapikan pesan error Browserless (buang embel-embel stack & requestId)."""
+    msg = str(msg or "")
+    msg = re.sub(r"\s*\(requestId:[^)]*\)\s*$", "", msg)
+    msg = re.sub(r"\s+default\s*\(https?://[^)]*\)", "", msg)
+    return msg.strip() or "browserless gagal tanpa pesan"
+
+
+async def get_terabox_dlink(share_url: str) -> dict:
+    client = BrowserlessClient()
+    ndus = (os.environ.get("TERABOX_NDUS") or "").strip()
+    if ndus.lower().startswith("ndus="):
+        ndus = ndus.split("=", 1)[1].strip()
+    safe_url = json.dumps(share_url)
+    safe_ndus = json.dumps(ndus)
+    code = r'''export default async ({ page }) => {
+      const shareUrl = __SHARE_URL__;
+      const injectedNdus = __NDUS__;
+      const captured = { jsToken: null, dpLogId: null, shorturlinfo: null, shareList: null, downloadResponses: [], resourceUrls: [] };
+      const pickThumb = (f) => {
+        try {
+          const t = f && f.thumbs;
+          if (t && typeof t === "object") return t.url3 || t.url2 || t.url1 || null;
+        } catch (_) {}
+        return null;
+      };
+      const rememberRequest = (url) => {
+        try {
+          const parsed = new URL(url);
+          const token = parsed.searchParams.get("jsToken");
+          const logid = parsed.searchParams.get("dp-logid");
+          if (token) captured.jsToken = token;
+          if (logid) captured.dpLogId = logid;
+        } catch (_) {}
+      };
+      page.on("request", r => rememberRequest(r.url()));
+      page.on("response", async (response) => {
+        try {
+          const url = response.url();
+          rememberRequest(url);
+          const ct = (response.headers()["content-type"] || "").toLowerCase();
+          if (!ct.includes("json") && !ct.includes("text")) return;
+          if (url.includes("shorturlinfo") || url.includes("/share/list") || url.includes("download") || url.includes("filemetas") || url.includes("dlink")) {
+            try {
+              const text = await response.text();
+              let parsed = null;
+              try { parsed = JSON.parse(text); } catch (_) { parsed = { _raw: text.slice(0, 400) }; }
+              if (url.includes("shorturlinfo")) captured.shorturlinfo = parsed;
+              if (url.includes("/share/list")) captured.shareList = parsed;
+              if (url.includes("download") || url.includes("filemetas") || url.includes("dlink"))
+                captured.downloadResponses.push({ url, data: parsed });
+            } catch (_) {}
+          }
+        } catch (_) {}
+      });
+      await page.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+      await page.setViewport({ width: 1366, height: 768 });
+      if (injectedNdus) {
+        for (const domain of [".terabox.com", ".terabox.app", ".1024terabox.com", ".1024tera.com", "www.terabox.com", "www.terabox.app", "www.1024tera.com", "1024terabox.com"]) {
+          for (const cookieName of ["NDUS", "ndus"]) {
+            try { await page.setCookie({ name: cookieName, value: injectedNdus, domain, path: "/", secure: true }); } catch (_) {}
+          }
+        }
+      }
+      await page.goto(shareUrl, { waitUntil: "networkidle2", timeout: 45000 }).catch(() => page.goto(shareUrl, { waitUntil: "domcontentloaded", timeout: 30000 }));
+      await new Promise(r => setTimeout(r, 3500));
+      try {
+        for (const sel of ["button", "[class*='download']", "a[href*='download']"]) {
+          const els = await page.$$(sel);
+          for (const el of els.slice(0, 5)) {
+            const text = (await page.evaluate(e => (e.innerText || "").toLowerCase(), el)).trim();
+            if (text.includes("download") || text.includes("unduh") || text.includes("continue")) {
+              await el.click().catch(() => {});
+              await new Promise(r => setTimeout(r, 800));
+            }
+          }
+        }
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, 1500));
+      const html = await page.content();
+      const currentUrl = page.url();
+      if (!captured.jsToken) {
+        for (const pattern of [/[?&]jsToken=([A-Za-z0-9_-]+)/i, /["']jsToken["']\s*[:=]\s*["']([^"']+)["']/i, /fn%28%22([A-Za-z0-9_-]+)%22%29/i, /fn\("([A-Za-z0-9_-]+)"\)/i]) {
+          const match = html.match(pattern);
+          if (match) { captured.jsToken = match[1]; break; }
+        }
+      }
+      if (!captured.jsToken) {
+        try {
+          for (const resource of await page.evaluate(() => performance.getEntriesByType("resource").map(e => e.name))) {
+            rememberRequest(resource);
+            if (captured.jsToken) break;
+          }
+        } catch (_) {}
+      }
+      const getSurl = (urlStr) => {
+        try {
+          const u = new URL(urlStr);
+          const parts = u.pathname.split("/").filter(Boolean);
+          const idx = parts.findIndex(p => p.toLowerCase() === "s");
+          if (idx >= 0 && parts[idx + 1]) {
+            let s = parts[idx + 1];
+            if (s.startsWith("1") && s.length > 15) s = s.slice(1);
+            return s;
+          }
+          let s = u.searchParams.get("surl");
+          if (s && s.startsWith("1") && s.length > 15) s = s.slice(1);
+          return s;
+        } catch (_) { return null; }
+      };
+      let surl = getSurl(currentUrl) || getSurl(shareUrl);
+      if (!surl) {
+        const m = html.match(/surl[=:]["']?([A-Za-z0-9_-]{8,})/i);
+        if (m) { surl = m[1]; if (surl.startsWith("1") && surl.length > 15) surl = surl.slice(1); }
+      }
+      if (!captured.dpLogId) captured.dpLogId = String(Date.now()) + String(Math.floor(Math.random() * 9000 + 1000));
+      const origin = (() => { try { return new URL(currentUrl).origin; } catch (_) { try { return new URL(shareUrl).origin; } catch (__) { return "https://www.terabox.com"; } } })();
+      const commonParams = () => {
+        const p = new URLSearchParams({ app_id: "250528", web: "1", channel: "dubox", clienttype: "0", "dp-logid": captured.dpLogId });
+        if (captured.jsToken) p.set("jsToken", captured.jsToken);
+        return p;
+      };
+      const pageFetchJson = async (url, options = {}) => page.evaluate(async (u, opts) => {
+        try {
+          const resp = await fetch(u, { credentials: "include", cache: opts.cache || "default", headers: { "Accept": "application/json, text/plain, */*", "X-Requested-With": "XMLHttpRequest", ...(opts.headers || {}) }, method: opts.method || "GET", body: opts.body || undefined });
+          const text = await resp.text();
+          let data = null;
+          try { data = JSON.parse(text); } catch (_) { return { ok: false, status: resp.status, nonJson: true, preview: text.slice(0, 300) }; }
+          return { ok: resp.ok, status: resp.status, data };
+        } catch (e) { return { ok: false, error: String(e) }; }
+      }, url, options);
+      let info = captured.shorturlinfo;
+      let listData = captured.shareList;
+      if ((!info || Number(info.errno) !== 0) && captured.jsToken && surl) {
+        const infoUrl = new URL("/api/shorturlinfo", origin);
+        const params = commonParams(); params.set("shorturl", surl); params.set("root", "1"); params.set("scene", "");
+        for (const [k, v] of params.entries()) infoUrl.searchParams.set(k, v);
+        const res = await pageFetchJson(infoUrl.toString(), { headers: { "Referer": currentUrl || shareUrl } });
+        if (res && res.data && !res.nonJson) info = res.data;
+      }
+      if ((!info || Number(info?.errno) !== 0) && captured.jsToken && surl) {
+        const listUrl = new URL("/share/list", origin);
+        const params = commonParams(); params.set("shorturl", surl); params.set("root", "1"); params.set("page", "1"); params.set("num", "100");
+        for (const [k, v] of params.entries()) listUrl.searchParams.set(k, v);
+        const res = await pageFetchJson(listUrl.toString(), { headers: { "Referer": currentUrl || shareUrl } });
+        if (res && res.data && !res.nonJson && Number(res.data.errno) === 0 && Array.isArray(res.data.list)) {
+          listData = res.data;
+          info = { errno: 0, list: listData.list, shareid: listData.share_id || listData.shareid, uk: listData.uk, sign: listData.sign, timestamp: listData.timestamp, randsk: listData.randsk };
+        }
+      }
+      if (!captured.jsToken) throw new Error("jsToken Terabox tidak ditemukan");
+      if (!surl) throw new Error("Kode share (surl) tidak ditemukan");
+      if (!info || Number(info.errno) !== 0) throw new Error("Terabox metadata gagal (errno " + (info?.errno ?? "?") + "): " + (info?.show_msg || info?.errmsg || "unknown"));
+      const fileList = Array.isArray(info.list) ? info.list : [];
+      const files = fileList.filter(item => Number(item?.isdir || 0) === 0);
+      if (!files.length && fileList.length) files.push(fileList[0]);
+      if (!files.length) throw new Error("Tidak ada file di share");
+      // Pastikan timestamp FRESH: server Terabox kadang mengembalikan timestamp
+      // basi (~1 jam). Sign terikat EXACT pada nilai timestamp tersebut, jadi
+      // ulangi fetch hingga dapat yang fresh, lalu pakai nilai persis itu.
+      const tsIsFresh = (ts) => {
+        const n = Number(ts);
+        return !!n && Math.abs(n - Math.floor(Date.now() / 1000)) < 300;
+      };
+      if (captured.jsToken && surl && !tsIsFresh(info && info.timestamp)) {
+        for (let attempt = 0; attempt < 3 && !tsIsFresh(info && info.timestamp); attempt++) {
+          try {
+            const freshUrl = new URL("/api/shorturlinfo", origin);
+            const fp = commonParams();
+            fp.set("shorturl", surl); fp.set("root", "1"); fp.set("scene", "");
+            fp.set("_t", String(Date.now()) + "_" + attempt);
+            for (const [k, v] of fp.entries()) freshUrl.searchParams.set(k, v);
+            const fres = await pageFetchJson(freshUrl.toString(), { headers: { "Referer": currentUrl || shareUrl }, cache: "no-store" });
+            if (fres && fres.data && !fres.nonJson && Number(fres.data.errno) === 0) {
+              info = fres.data;
+            }
+          } catch (_) {}
+          if (!tsIsFresh(info && info.timestamp) && attempt < 2) {
+            await new Promise((r) => setTimeout(r, 1500));
+          }
+        }
+      }
+      const shareId = info.shareid ?? info.share_id;
+      const uk = info.uk ?? info.share_uk;
+      const sign = info.sign;
+      const timestamp = info.timestamp;
+      if (!shareId || !uk || !sign || !timestamp) {
+        const results = [];
+        for (const f of files) if (f.dlink) results.push({ filename: f.server_filename || "file", size: f.size, dlink: f.dlink, thumb: pickThumb(f) });
+        for (const dr of captured.downloadResponses) {
+          const lst = Array.isArray(dr.data?.list) ? dr.data.list : [];
+          for (const item of lst) if (item.dlink) results.push({ filename: item.server_filename || "file", size: item.size, dlink: item.dlink, thumb: pickThumb(item) });
+          if (typeof dr.data?.dlink === "string") results.push({ filename: "file", size: null, dlink: dr.data.dlink, thumb: null });
+        }
+        if (results.length) return { data: { dlink: results[0].dlink, files: results, filename: results[0].filename }, type: "application/json" };
+        throw new Error("Metadata download tidak lengkap (shareid/uk/sign/timestamp)");
+      }
+      let sekey = null;
+      try {
+        const cookieStr = await page.evaluate(() => document.cookie || "");
+        const cookieMap = {};
+        cookieStr.split(";").forEach(part => { const idx = part.indexOf("="); if (idx > 0) cookieMap[part.slice(0, idx).trim()] = part.slice(idx + 1).trim(); });
+        sekey = cookieMap["randsk"] || cookieMap["BOXCLND"] || cookieMap["sekey"] || null;
+        if (sekey) try { sekey = decodeURIComponent(sekey); } catch (_) {}
+      } catch (_) {}
+      if (!sekey && info?.randsk) { sekey = info.randsk; try { sekey = decodeURIComponent(String(sekey)); } catch (_) {} }
+      if (!sekey && listData?.randsk) { sekey = listData.randsk; try { sekey = decodeURIComponent(String(sekey)); } catch (_) {} }
+      const results = [];
+      const debugLog = [{ step: "sekey", hasSekey: !!sekey, sekeyLen: sekey ? String(sekey).length : 0, hasNdus: !!injectedNdus },
+        { step: "tsinfo", infoTs: info && info.timestamp, browserISO: new Date().toISOString() }];
+      const extractDlinkFromPayload = (payload, fsId) => {
+        if (!payload || typeof payload !== "object") return null;
+        if (typeof payload.dlink === "string" && payload.dlink.startsWith("http")) return payload.dlink;
+        if (Array.isArray(payload.list)) {
+          const match = payload.list.find(item => String(item.fs_id) === String(fsId)) || payload.list[0];
+          if (match?.dlink?.startsWith?.("http")) return match.dlink;
+        }
+        if (Array.isArray(payload.dlink)) {
+          const match = payload.dlink.find(item => String(item.fs_id) === String(fsId)) || payload.dlink[0];
+          if (match?.dlink?.startsWith?.("http")) return match.dlink;
+        }
+        return null;
+      };
+      // PENTING: pakai EXACT info.timestamp — sign terikat pada nilai ini.
+      // Mengganti dengan Date.now() membuat signature tidak valid (errno 2).
+      const tryShareDownload = async (fsId) => {
+        for (const ep of ["/share/download", "/api/sharedownload"]) {
+          const downloadUrl = new URL(ep, origin);
+          const params = commonParams();
+          params.set("shareid", String(shareId)); params.set("sign", String(sign)); params.set("timestamp", String(timestamp));
+          params.set("uk", String(uk)); params.set("primaryid", String(shareId));
+          for (const [k, v] of params.entries()) downloadUrl.searchParams.set(k, v);
+          const bases = [
+            { product: "share", nozip: "0", fid_list: "[" + String(fsId) + "]", uk: String(uk), primaryid: String(shareId), type: "nolimit" },
+            { product: "share", nozip: "0", fid_list: JSON.stringify([Number(fsId)]), uk: String(uk), primaryid: String(shareId), type: "nolimit" }
+          ];
+          const bodyVariants = [];
+          for (const b of bases) {
+            bodyVariants.push({ ...b });
+            if (sekey) {
+              bodyVariants.push({ ...b, extra: JSON.stringify({ sekey }) });
+              bodyVariants.push({ ...b, sekey });
+              bodyVariants.push({ ...b, extra: JSON.stringify({ sekey }), sekey });
+            }
+          }
+          for (const bodyObj of bodyVariants) {
+            const res = await pageFetchJson(downloadUrl.toString(), {
+              method: "POST",
+              headers: { "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8", "Referer": currentUrl || shareUrl, "Origin": origin },
+              body: new URLSearchParams(bodyObj).toString()
+            });
+            if (!res?.data || res.nonJson) { debugLog.push({ ep, errno: res?.data?.errno, nonJson: !!res?.nonJson, err: res?.error }); continue; }
+            const dlink = extractDlinkFromPayload(res.data, fsId);
+            debugLog.push({ ep, errno: res.data.errno, hasDlink: !!dlink, hasSekey: !!(bodyObj.extra || bodyObj.sekey) });
+            if (dlink && (res.data.errno === 0 || res.data.errno == null)) return dlink;
+          }
+        }
+        return null;
+      };
+      for (const file of files.slice(0, 10)) {
+        const fsId = file.fs_id;
+        if (!fsId) continue;
+        if (typeof file.dlink === "string" && file.dlink.startsWith("http")) {
+          results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink: file.dlink, thumb: pickThumb(file) });
+          continue;
+        }
+        let dlink = await tryShareDownload(fsId);
+        if (!dlink) for (const dr of captured.downloadResponses) { dlink = extractDlinkFromPayload(dr.data, fsId); if (dlink) break; }
+        if (dlink) results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file) });
+      }
+      if (!results.length) throw new Error("Terabox API selesai tetapi dlink kosong. debug=" + JSON.stringify(debugLog).slice(0, 900));
+      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results }, type: "application/json" };
+    };'''
+    code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus)
+    try:
+        result = client._post_function(code, timeout_ms=50000)
+    except Exception as exc:
+        fb = _try_public_fallbacks(share_url)
+        if fb and fb.get("success"):
+            return fb
+        return {"success": False, "error": f"Browserless error: {_clean_browserless_error(exc)}"}
+    if result.get("error"):
+        fb = _try_public_fallbacks(share_url)
+        if fb and fb.get("success"):
+            return fb
+        return {"success": False, "error": f"Browserless error: {_clean_browserless_error(result.get('error'))}"}
+    files = _extract_files(result)
+    dlink = _extract_dlink(result)
+    if files:
+        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename")}
+    if dlink:
+        return {"success": True, "dlink": dlink, "files": [{"filename": "file", "dlink": dlink}]}
+    fb = _try_public_fallbacks(share_url)
+    if fb and fb.get("success"):
+        return fb
+    return {"success": False, "error": "Browserless selesai tetapi direct download link tidak ditemukan.", "debug": result}
