@@ -1,35 +1,31 @@
 # TerDowngh - Self-Hosted Terabox Direct Downloader
 
-API mandiri untuk mendapatkan direct download link (dlink) dari Terabox share link menggunakan Browser Use.
+API mandiri untuk mendapatkan direct download link (CDN/dlink) dari share link Terabox/1024TeraBox.
 
 ## Fitur
 
-- Input hanya share link Terabox.
-- Tidak membutuhkan `fs_id` dari pengguna.
-- Browser Use menerima payload minimal sesuai schema: `{ "task": "..." }`.
-- UI sederhana, clean, dan tetap memiliki animasi loading.
-- Endpoint REST sederhana.
+- Mendapatkan direct download link (dlink) dari Terabox share link
+- Menggunakan Browserless Function API untuk menjalankan Puppeteer di browser cloud
+- Tidak membutuhkan input `fs_id` dari pengguna
+- Self-hosted, bisa deploy ke Vercel/Fly.io/Railway/dll
+- Endpoint REST sederhana
 
 ## Endpoint
 
 ### GET /health
-
 Health check.
 
 ### POST /api/terabox/direct
-
 Ambil direct download link dari share link Terabox.
 
-Request:
-
+**Body (JSON):**
 ```json
 {
   "url": "https://1024terabox.com/s/1pXm84UifuGeghFrOoRYN3g"
 }
 ```
 
-Response:
-
+**Response:**
 ```json
 {
   "dlink": "https://d.teraboxcdn.com/...",
@@ -39,8 +35,26 @@ Response:
 
 ## Environment Variable
 
-Set `BROWSER_USE_API_KEY` pada environment Vercel. Jangan menyimpan API key di source code.
+- `BROWSERLESS_TOKEN` - API token dari Browserless
 
-## Deploy
+Browserless Function API endpoint yang digunakan:
 
-Import repository ke Vercel dan set environment variable `BROWSER_USE_API_KEY`, lalu deploy.
+`https://production-sfo.browserless.io/function?token=$BROWSERLESS_TOKEN`
+
+## Local Development
+
+```bash
+pip install -r requirements.txt
+python server.py
+```
+
+## Deploy ke Vercel
+
+1. Push repo ke GitHub
+2. Import ke Vercel
+3. Set Environment Variable `BROWSERLESS_TOKEN`
+4. Deploy
+
+## License
+
+MIT
