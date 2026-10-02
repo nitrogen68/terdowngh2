@@ -11,7 +11,7 @@ from terabox_browseruse import get_terabox_dlink
 
 class Handler(BaseHTTPRequestHandler):
     def _json(self, obj, code=200):
-        data = json.dumps(obj).encode("utf-8")
+        data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
@@ -90,7 +90,16 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"error": result.get("error", "Gagal mendapatkan dlink")}, 400)
             return
 
-        self._json({"dlink": result["dlink"], "ok": True})
+        payload = {
+            "ok": True,
+            "dlink": result["dlink"],
+        }
+        if result.get("filename"):
+            payload["filename"] = result["filename"]
+        if result.get("files"):
+            payload["files"] = result["files"]
+
+        self._json(payload)
 
     def log_message(self, fmt, *args):
         pass
