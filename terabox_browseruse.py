@@ -4,7 +4,7 @@ import re
 from urllib import request, error
 from urllib.parse import quote, urlparse, parse_qs
 
-BROWSERLESS_TOKEN = os.environ.get("BROWSERLESS_TOKEN")
+BROWSERLESS_TOKEN = os.environ.get("BROWSERLESS_TOKEN", "").strip()
 BROWSERLESS_ENDPOINT = "https://production-sfo.browserless.io/function"
 
 PUBLIC_FALLBACKS = [
@@ -14,7 +14,7 @@ PUBLIC_FALLBACKS = [
 
 
 class BrowserlessClient:
-    def _post_function(self, code: str, timeout_ms: int = 90000):
+    def _post_function(self, code: str, timeout_ms: int = 50000):
         if not BROWSERLESS_TOKEN:
             raise RuntimeError("BROWSERLESS_TOKEN belum dikonfigurasi")
         endpoint = (
@@ -91,7 +91,14 @@ def _extract_files(value):
             dlink = obj.get("dlink") or obj.get("download_url") or obj.get("original_download_url") or obj.get("direct_link")
             size = obj.get("size") or obj.get("formatted_size")
             if name and isinstance(dlink, str) and dlink.startswith("http"):
-                files.append({"filename": name, "size": size, "dlink": dlink})
+                thumb = obj.get("thumb")
+                if not isinstance(thumb, str):
+                    th = obj.get("thumbs")
+                    if isinstance(th, dict):
+                        cand = th.get("url3") or th.get("url2") or th.get("url1")
+                        thumb = cand if isinstance(cand, str) else None
+                files.append({"filename": name, "size": size, "dlink": dlink,
+                              "thumb": thumb if isinstance(thumb, str) else None})
             for v in obj.values():
                 walk(v)
         elif isinstance(obj, list):
@@ -152,6 +159,13 @@ async def get_terabox_dlink(share_url: str) -> dict:
       const shareUrl = __SHARE_URL__;
       const injectedNdus = __NDUS__;
       const captured = { jsToken: null, dpLogId: null, shorturlinfo: null, shareList: null, downloadResponses: [], resourceUrls: [] };
+      const pickThumb = (f) => {
+        try {
+          const t = f && f.thumbs;
+          if (t && typeof t === "object") return t.url3 || t.url2 || t.url1 || null;
+        } catch (_) {}
+        return null;
+      };
       const rememberRequest = (url) => {
         try {
           const parsed = new URL(url);
@@ -287,11 +301,11 @@ async def get_terabox_dlink(share_url: str) -> dict:
       const timestamp = info.timestamp;
       if (!shareId || !uk || !sign || !timestamp) {
         const results = [];
-        for (const f of files) if (f.dlink) results.push({ filename: f.server_filename || "file", size: f.size, dlink: f.dlink });
+        for (const f of files) if (f.dlink) results.push({ filename: f.server_filename || "file", size: f.size, dlink: f.dlink, thumb: pickThumb(f) });
         for (const dr of captured.downloadResponses) {
           const lst = Array.isArray(dr.data?.list) ? dr.data.list : [];
-          for (const item of lst) if (item.dlink) results.push({ filename: item.server_filename || "file", size: item.size, dlink: item.dlink });
-          if (typeof dr.data?.dlink === "string") results.push({ filename: "file", size: null, dlink: dr.data.dlink });
+          for (const item of lst) if (item.dlink) results.push({ filename: item.server_filename || "file", size: item.size, dlink: item.dlink, thumb: pickThumb(item) });
+          if (typeof dr.data?.dlink === "string") results.push({ filename: "file", size: null, dlink: dr.data.dlink, thumb: null });
         }
         if (results.length) return { data: { dlink: results[0].dlink, files: results, filename: results[0].filename }, type: "application/json" };
         throw new Error("Metadata download tidak lengkap (shareid/uk/sign/timestamp)");
@@ -364,13 +378,19 @@ async def get_terabox_dlink(share_url: str) -> dict:
         }
         let dlink = await tryShareDownload(fsId);
         if (!dlink) for (const dr of captured.downloadResponses) { dlink = extractDlinkFromPayload(dr.data, fsId); if (dlink) break; }
-        if (dlink) results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink });
+        if (dlink) results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file) });
       }
       if (!results.length) throw new Error("Terabox API selesai tetapi dlink kosong. debug=" + JSON.stringify(debugLog).slice(0, 900));
       return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results }, type: "application/json" };
     };'''
     code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus)
-    result = client._post_function(code, timeout_ms=90000)
+    try:
+        result = client._post_function(code, timeout_ms=50000)
+    except Exception as exc:
+        fb = _try_public_fallbacks(share_url)
+        if fb and fb.get("success"):
+            return fb
+        return {"success": False, "error": f"Browserless error: {exc}"}
     if result.get("error"):
         fb = _try_public_fallbacks(share_url)
         if fb and fb.get("success"):
