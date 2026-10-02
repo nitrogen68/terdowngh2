@@ -376,6 +376,8 @@ async def get_terabox_dlink(share_url: str) -> dict:
         const dt = dstimeOf(dlink);
         return dt === null || dt > tsNow - 300;
       };
+      debugLog.push({ step: "tsinfo", infoTs: info.timestamp, tsNow: tsNow,
+        browserNow: Date.now(), browserISO: new Date().toISOString() });
       const tryShareDownload = async (fsId, ts) => {
         for (const ep of ["/share/download", "/api/sharedownload"]) {
           const downloadUrl = new URL(ep, origin);
