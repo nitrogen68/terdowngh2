@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="cache-version" content="2026-10-02-browserless-v1">
+  <meta name="cache-version" content="2026-10-02-browserless-v2-robust">
   <title>TerDowngh — Terabox Direct Downloader</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -153,6 +153,11 @@
 
         dlink.value = data.dlink;
         downloadBtn.href = data.dlink;
+        if (data.filename) {
+          downloadBtn.textContent = 'Download: ' + data.filename;
+        } else {
+          downloadBtn.textContent = 'Download Sekarang';
+        }
         setLoading(false);
         result.classList.remove('hidden');
         submitBtn.disabled = false;
