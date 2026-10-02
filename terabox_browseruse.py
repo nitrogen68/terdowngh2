@@ -359,11 +359,28 @@ async def get_terabox_dlink(share_url: str) -> dict:
         }
         return null;
       };
-      const tryShareDownload = async (fsId) => {
+      // Kandidat timestamp: waktu klien (fresh) dulu, lalu info.timestamp sebagai
+      // fallback. info.timestamp kadang berisi waktu pembuatan share (basi)
+      // sehingga dlink yang dihasilkan langsung kedaluwarsa (dstime < now -> 403).
+      const tsNow = Math.floor(Date.now() / 1000);
+      const tsCandidates = [tsNow];
+      const infoTs = Number(info.timestamp);
+      if (infoTs && Math.abs(infoTs - tsNow) > 120 && !tsCandidates.includes(infoTs)) {
+        tsCandidates.push(infoTs);
+      }
+      const dstimeOf = (dlink) => {
+        try { const m = String(dlink).match(/[?&]dstime=(\d+)/); return m ? parseInt(m[1], 10) : null; }
+        catch (_) { return null; }
+      };
+      const dlinkIsFresh = (dlink) => {
+        const dt = dstimeOf(dlink);
+        return dt === null || dt > tsNow - 300;
+      };
+      const tryShareDownload = async (fsId, ts) => {
         for (const ep of ["/share/download", "/api/sharedownload"]) {
           const downloadUrl = new URL(ep, origin);
           const params = commonParams();
-          params.set("shareid", String(shareId)); params.set("sign", String(sign)); params.set("timestamp", String(timestamp));
+          params.set("shareid", String(shareId)); params.set("sign", String(sign)); params.set("timestamp", String(ts));
           params.set("uk", String(uk)); params.set("primaryid", String(shareId));
           for (const [k, v] of params.entries()) downloadUrl.searchParams.set(k, v);
           const bases = [
@@ -397,10 +414,18 @@ async def get_terabox_dlink(share_url: str) -> dict:
         const fsId = file.fs_id;
         if (!fsId) continue;
         if (typeof file.dlink === "string" && file.dlink.startsWith("http")) {
-          results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink: file.dlink });
+          results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink: file.dlink, thumb: pickThumb(file) });
           continue;
         }
-        let dlink = await tryShareDownload(fsId);
+        let dlink = null;
+        let staleFallback = null;
+        for (const ts of tsCandidates) {
+          const cand = await tryShareDownload(fsId, ts);
+          if (!cand) continue;
+          if (dlinkIsFresh(cand)) { dlink = cand; break; }
+          if (!staleFallback) staleFallback = cand;
+        }
+        if (!dlink) dlink = staleFallback;
         if (!dlink) for (const dr of captured.downloadResponses) { dlink = extractDlinkFromPayload(dr.data, fsId); if (dlink) break; }
         if (dlink) results.push({ filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file) });
       }
