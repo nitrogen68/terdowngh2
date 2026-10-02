@@ -64,25 +64,33 @@ Perbaikan yang diterapkan:
 5. Normalisasi `surl` (buang prefix `1` bila perlu)
 6. Fallback ke public Cloudflare Worker bila Browserless gagal total
 7. Response multi-file
+8. **v2.2:** Fix `errno: 2` — kirim `sekey`/`randsk`, inject cookie `TERABOX_NDUS`
 
 ## Environment Variable
 
-- `BROWSERLESS_TOKEN` — API token dari [Browserless](https://www.browserless.io/)
+- `BROWSERLESS_TOKEN` — API token dari [Browserless](https://www.browserless.io/) **(wajib)**
+- `TERABOX_NDUS` — (opsional tapi **sangat disarankan**) nilai cookie `ndus` dari akun Terabox yang sudah login. Tanpa ini, banyak share mengembalikan `errno: 2` / dlink kosong.
 
-Endpoint yang dipakai:
+Cara ambil `ndus`:
+1. Login di https://www.terabox.com
+2. DevTools → Application → Cookies → salin value cookie `ndus`
+3. Set di Vercel: `TERABOX_NDUS=YSj9BCeteHui...` (tanpa prefix `ndus=`)
+
+Endpoint Browserless:
 `https://production-sfo.browserless.io/function?token=$BROWSERLESS_TOKEN`
 
 ## Deploy ke Vercel
 
 1. Push repo ke GitHub
 2. Import project di Vercel
-3. Set Environment Variable `BROWSERLESS_TOKEN`
+3. Set Environment Variable `BROWSERLESS_TOKEN` dan (disarankan) `TERABOX_NDUS`
 4. Deploy
 
 ## Local Development
 
 ```bash
 export BROWSERLESS_TOKEN=your_token_here
+export TERABOX_NDUS=your_ndus_cookie_value
 # Jalankan via Vercel CLI atau server yang memanggil api/index.py
 ```
 
@@ -91,6 +99,7 @@ export BROWSERLESS_TOKEN=your_token_here
 - Link download CDN bersifat sementara (signed + expiry).
 - Share yang dilindungi password / verifikasi ekstra tetap bisa gagal.
 - Public fallback worker tidak dijamin selalu up.
+- **errno 2** = hampir selalu butuh cookie `ndus` (set `TERABOX_NDUS`).
 
 ## License
 
