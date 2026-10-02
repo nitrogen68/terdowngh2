@@ -271,7 +271,7 @@ async def get_terabox_dlink(share_url: str) -> dict:
       };
       const pageFetchJson = async (url, options = {}) => page.evaluate(async (u, opts) => {
         try {
-          const resp = await fetch(u, { credentials: "include", headers: { "Accept": "application/json, text/plain, */*", "X-Requested-With": "XMLHttpRequest", ...(opts.headers || {}) }, method: opts.method || "GET", body: opts.body || undefined });
+          const resp = await fetch(u, { credentials: "include", cache: opts.cache || "default", headers: { "Accept": "application/json, text/plain, */*", "X-Requested-With": "XMLHttpRequest", ...(opts.headers || {}) }, method: opts.method || "GET", body: opts.body || undefined });
           const text = await resp.text();
           let data = null;
           try { data = JSON.parse(text); } catch (_) { return { ok: false, status: resp.status, nonJson: true, preview: text.slice(0, 300) }; }
@@ -304,6 +304,21 @@ async def get_terabox_dlink(share_url: str) -> dict:
       const files = fileList.filter(item => Number(item?.isdir || 0) === 0);
       if (!files.length && fileList.length) files.push(fileList[0]);
       if (!files.length) throw new Error("Tidak ada file di share");
+      // Refresh paksa: sign/timestamp/sekey dari intersep bisa basi sehingga
+      // dlink yang dihasilkan langsung ditolak CDN (403). Ambil yang fresh.
+      try {
+        if (captured.jsToken && surl) {
+          const freshUrl = new URL("/api/shorturlinfo", origin);
+          const fp = commonParams();
+          fp.set("shorturl", surl); fp.set("root", "1"); fp.set("scene", "");
+          fp.set("_t", String(Date.now()));
+          for (const [k, v] of fp.entries()) freshUrl.searchParams.set(k, v);
+          const fres = await pageFetchJson(freshUrl.toString(), { headers: { "Referer": currentUrl || shareUrl }, cache: "no-store" });
+          if (fres && fres.data && !fres.nonJson && Number(fres.data.errno) === 0) {
+            info = fres.data;
+          }
+        }
+      } catch (_) {}
       const shareId = info.shareid ?? info.share_id;
       const uk = info.uk ?? info.share_uk;
       const sign = info.sign;
