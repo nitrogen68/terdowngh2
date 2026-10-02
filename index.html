@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="cache-version" content="2026-10-02-browserless-v2-robust">
+  <meta name="cache-version" content="2026-10-03-fix-missing-module">
   <title>TerDowngh — Terabox Direct Downloader</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -51,16 +51,9 @@
         </div>
 
         <div id="result" class="hidden fade mt-6 border-t border-slate-100 pt-5">
-          <p class="text-sm font-semibold text-slate-800 mb-2">Link Download Siap</p>
-          <div class="flex gap-2">
-            <input id="dlink" readonly class="min-w-0 flex-1 h-11 px-3 rounded-xl border border-slate-200 bg-slate-50 text-xs outline-none">
-            <button id="copyBtn" type="button" class="px-4 h-11 rounded-xl border border-slate-200 hover:bg-slate-50 text-sm font-medium">Salin</button>
-          </div>
-          <a id="downloadBtn" target="_blank" rel="noopener noreferrer"
-             class="mt-3 w-full h-11 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center text-sm font-semibold transition">
-            Download Sekarang
-          </a>
-          <button id="resetBtn" type="button" class="mt-3 w-full h-10 text-sm text-slate-500 hover:text-slate-800">Gunakan link lain</button>
+          <p id="resultTitle" class="text-sm font-semibold text-slate-800 mb-3">Link Download Siap</p>
+          <div id="fileList" class="space-y-3"></div>
+          <button id="resetBtn" type="button" class="mt-4 w-full h-10 text-sm text-slate-500 hover:text-slate-800">Gunakan link lain</button>
         </div>
       </div>
 
@@ -78,10 +71,66 @@
     const loadingText = document.getElementById('loadingText');
     const elapsedText = document.getElementById('elapsedText');
     const result = document.getElementById('result');
-    const dlink = document.getElementById('dlink');
-    const downloadBtn = document.getElementById('downloadBtn');
+    const resultTitle = document.getElementById('resultTitle');
+    const fileList = document.getElementById('fileList');
     let loadingTimer = null;
     let loadingStartedAt = 0;
+
+    function fmtSize(bytes) {
+      if (bytes === null || bytes === undefined || isNaN(Number(bytes))) return '';
+      const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+      let i = 0;
+      let v = Number(bytes);
+      while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+      return (v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)) + ' ' + units[i];
+    }
+
+    function renderFiles(files) {
+      fileList.innerHTML = '';
+      files.forEach((f) => {
+        const card = document.createElement('div');
+        card.className = 'file-card rounded-xl border border-slate-200 p-3';
+
+        const title = document.createElement('p');
+        title.className = 'text-sm font-medium text-slate-800 truncate';
+        title.textContent = f.filename || 'File tanpa nama';
+        title.title = f.filename || '';
+        card.appendChild(title);
+
+        if (f.size !== null && f.size !== undefined) {
+          const size = document.createElement('p');
+          size.className = 'text-xs text-slate-400 mt-0.5';
+          size.textContent = fmtSize(f.size);
+          card.appendChild(size);
+        }
+
+        const row = document.createElement('div');
+        row.className = 'flex gap-2 mt-2';
+
+        const input = document.createElement('input');
+        input.readOnly = true;
+        input.value = f.dlink;
+        input.className = 'file-link min-w-0 flex-1 h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs outline-none';
+        row.appendChild(input);
+
+        const copyBtn = document.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'copy-btn px-3 h-10 rounded-lg border border-slate-200 hover:bg-slate-50 text-sm font-medium shrink-0';
+        copyBtn.textContent = 'Salin';
+        row.appendChild(copyBtn);
+        card.appendChild(row);
+
+        const dl = document.createElement('a');
+        dl.href = f.dlink;
+        dl.target = '_blank';
+        dl.rel = 'noopener noreferrer';
+        dl.className = 'mt-2 w-full h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center text-sm font-semibold transition';
+        dl.textContent = 'Download';
+        card.appendChild(dl);
+
+        fileList.appendChild(card);
+      });
+    }
 
     function stopLoadingTimer() {
       if (loadingTimer) clearInterval(loadingTimer);
@@ -151,13 +200,17 @@
           throw new Error(data.error || 'Gagal mendapatkan link download.');
         }
 
-        dlink.value = data.dlink;
-        downloadBtn.href = data.dlink;
-        if (data.filename) {
-          downloadBtn.textContent = 'Download: ' + data.filename;
-        } else {
-          downloadBtn.textContent = 'Download Sekarang';
+        const files = (Array.isArray(data.files) && data.files.length
+          ? data.files
+          : [{ filename: data.filename, size: null, dlink: data.dlink }]
+        ).filter((f) => f && f.dlink);
+        if (!files.length) {
+          throw new Error('Tidak ada link download yang berhasil diekstrak.');
         }
+        renderFiles(files);
+        resultTitle.textContent = files.length > 1
+          ? `${files.length} File Siap Didownload`
+          : 'Link Download Siap';
         setLoading(false);
         result.classList.remove('hidden');
         submitBtn.disabled = false;
@@ -167,11 +220,16 @@
       }
     });
 
-    document.getElementById('copyBtn').addEventListener('click', async () => {
+    fileList.addEventListener('click', async (event) => {
+      const btn = event.target.closest('.copy-btn');
+      if (!btn) return;
+      const card = btn.closest('.file-card');
+      const input = card ? card.querySelector('.file-link') : null;
+      if (!input) return;
       try {
-        await navigator.clipboard.writeText(dlink.value);
-        document.getElementById('copyBtn').textContent = 'Tersalin';
-        setTimeout(() => document.getElementById('copyBtn').textContent = 'Salin', 1200);
+        await navigator.clipboard.writeText(input.value);
+        btn.textContent = 'Tersalin';
+        setTimeout(() => { btn.textContent = 'Salin'; }, 1200);
       } catch {
         showError('Gagal menyalin link.');
       }
