@@ -17,10 +17,9 @@ class BrowserlessClient:
             f"{BROWSERLESS_ENDPOINT}?token={quote(BROWSERLESS_TOKEN, safe='')}"
             f"&timeout={timeout_ms}"
         )
-        body = code.encode("utf-8")
         req = request.Request(
             endpoint,
-            data=body,
+            data=code.encode("utf-8"),
             headers={
                 "Content-Type": "application/javascript",
                 "Cache-Control": "no-cache",
@@ -47,10 +46,12 @@ class BrowserlessClient:
 
 
 def _extract_dlink(value):
-    """Find a direct Terabox CDN URL in any Browserless response structure."""
+    """Extract a URL specifically from dlink/download fields."""
     if isinstance(value, dict):
-        for key in ("dlink", "downloadUrl", "download_url", "url", "location"):
+        for key in ("dlink", "downloadUrl", "download_url", "location"):
             candidate = value.get(key)
+            if isinstance(candidate, str) and candidate.startswith(("http://", "https://")):
+                return candidate
             found = _extract_dlink(candidate)
             if found:
                 return found
@@ -65,133 +66,185 @@ def _extract_dlink(value):
             found = _extract_dlink(child)
             if found:
                 return found
-        return None
-
-    if isinstance(value, str):
-        patterns = (
-            r"https?://[^\s\"'<>]+teraboxcdn\.com/[^\s\"'<>]+",
-            r"https?://d\.[^\s\"'<>]+terabox[^/\s\"'<>]*/[^\s\"'<>]+",
-        )
-        for pattern in patterns:
-            match = re.search(pattern, value)
-            if match:
-                return match.group(0).rstrip(").,;'\"")
 
     return None
 
 
 async def get_terabox_dlink(share_url: str) -> dict:
-    """Resolve the first file's direct download URL using Browserless Function API."""
+    """Resolve a public Terabox share URL using Browserless + Terabox share APIs.
+
+    The browser is used to obtain the current jsToken and session context. The
+    actual file metadata and download URL are then requested through Terabox's
+    own share endpoints from inside the same browser session. This is much more
+    reliable than waiting for a DOM Download button or guessing CDN hostnames.
+    """
     client = BrowserlessClient()
     safe_url = json.dumps(share_url)
 
-    # Browserless runs this Puppeteer function inside its managed browser.
-    # We monitor download-related network responses while interacting with the
-    # Terabox share page, avoiding the slower Browser Use agent/polling model.
     code = f'''export default async ({{ page }}) => {{
       const shareUrl = {safe_url};
-      const found = new Set();
-      let dlink = null;
+      let jsToken = null;
+      let dpLogId = null;
 
-      const clean = (value) => {{
-        if (!value || typeof value !== "string") return null;
-        const match = value.match(/https?:\\/\\/[^\\s"'<>]+(?:teraboxcdn\\.com|d\\.[^\\s"'<>]*terabox)[^\\s"'<>]*/i);
-        return match ? match[0].replace(/[),.;'"\\]]+$/, "") : null;
-      }};
-
-      const inspectValue = (value) => {{
-        if (!value) return;
-        if (typeof value === "string") {{
-          const direct = clean(value);
-          if (direct) dlink = direct;
-          try {{
-            const parsed = JSON.parse(value);
-            inspectValue(parsed);
-          }} catch (_) {{}}
-          return;
-        }}
-        if (Array.isArray(value)) {{
-          for (const item of value) inspectValue(item);
-          return;
-        }}
-        if (typeof value === "object") {{
-          for (const [key, item] of Object.entries(value)) {{
-            if (/dlink|download.?url|location/i.test(key)) inspectValue(item);
-            else if (typeof item === "string" && /teraboxcdn|d\\.terabox/i.test(item)) inspectValue(item);
-            else if (item && typeof item === "object") inspectValue(item);
-          }}
-        }}
-      }};
-
-      page.on("response", async (response) => {{
+      const rememberRequest = (url) => {{
         try {{
-          const url = response.url();
-          if (/teraboxcdn\\.com/i.test(url)) {{
-            dlink = clean(url) || url;
-            return;
-          }}
-          if (/\\/(share\\/download|api\\/download|share\\/download\\?)/i.test(url)) {{
-            const contentType = response.headers()["content-type"] || "";
-            if (contentType.includes("json")) {{
-              try {{ inspectValue(await response.json()); }} catch (_) {{}}
-            }}
-          }}
+          const parsed = new URL(url);
+          const token = parsed.searchParams.get("jsToken");
+          const logid = parsed.searchParams.get("dp-logid");
+          if (token) jsToken = token;
+          if (logid) dpLogId = logid;
         }} catch (_) {{}}
+      }};
+
+      page.on("request", request => rememberRequest(request.url()));
+      page.on("response", response => rememberRequest(response.url()));
+
+      await page.goto(shareUrl, {{
+        waitUntil: "domcontentloaded",
+        timeout: 30000
       }});
 
-      await page.goto(shareUrl, {{ waitUntil: "domcontentloaded", timeout: 30000 }});
+      // Allow the share application to initialise and issue its normal API
+      // requests. We capture jsToken/dp-logid from those requests.
+      await new Promise(resolve => setTimeout(resolve, 1800));
 
-      // Give Terabox's client-side file list a short time to render.
-      await new Promise(resolve => setTimeout(resolve, 2500));
+      const html = await page.content();
+      const tokenPatterns = [
+        /[?&]jsToken=([A-Za-z0-9_-]+)/i,
+        /["']jsToken["']\\s*[:=]\\s*["']([^"']+)["']/i,
+        /jsToken\\s*=\\s*["']([^"']+)["']/i
+      ];
 
-      if (!dlink) {{
-        // Click the first visible download-like control. This covers the
-        // current Terabox share UI without requiring an fs_id from the user.
-        const clicked = await page.evaluate(() => {{
-          const nodes = Array.from(document.querySelectorAll("button, a, [role=button], div"));
-          const patterns = /^(download|unduh)|download|unduh/i;
-          const candidate = nodes.find(el => {{
-            const text = (el.innerText || el.getAttribute("aria-label") || el.title || "").trim();
-            const rect = el.getBoundingClientRect();
-            return text && patterns.test(text) && rect.width > 0 && rect.height > 0;
-          }});
-          if (!candidate) return false;
-          candidate.click();
-          return true;
-        }});
-
-        if (clicked) {{
-          await new Promise(resolve => setTimeout(resolve, 4500));
+      if (!jsToken) {{
+        for (const pattern of tokenPatterns) {{
+          const match = html.match(pattern);
+          if (match) {{ jsToken = match[1]; break; }}
         }}
       }}
 
-      // Some Terabox builds expose a download link only after selecting the
-      // file. Try the first file row if no download button was found yet.
-      if (!dlink) {{
-        await page.evaluate(() => {{
-          const rows = Array.from(document.querySelectorAll("[role=button], li, tr, .file-item, [class*=file]"));
-          const row = rows.find(el => {{
-            const rect = el.getBoundingClientRect();
-            const text = (el.innerText || "").trim();
-            return text && rect.width > 0 && rect.height > 0 && !/download|unduh/i.test(text);
-          }});
-          if (row) row.click();
-        }});
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        await page.evaluate(() => {{
-          const nodes = Array.from(document.querySelectorAll("button, a, [role=button]"));
-          const candidate = nodes.find(el => /download|unduh/i.test((el.innerText || el.getAttribute("aria-label") || "").trim()));
-          if (candidate) candidate.click();
-        }});
-        await new Promise(resolve => setTimeout(resolve, 3500));
+      // Resource URLs are another reliable source when the token is not
+      // embedded directly in the HTML.
+      if (!jsToken) {{
+        const resources = await page.evaluate(() =>
+          performance.getEntriesByType("resource").map(entry => entry.name)
+        );
+        for (const resource of resources) {{
+          rememberRequest(resource);
+          if (jsToken) break;
+        }}
       }}
+
+      const current = new URL(page.url());
+      const pathParts = current.pathname.split("/").filter(Boolean);
+      let surl = null;
+      const sIndex = pathParts.findIndex(part => part.toLowerCase() === "s");
+      if (sIndex >= 0 && pathParts[sIndex + 1]) surl = pathParts[sIndex + 1];
+      if (!surl) surl = current.searchParams.get("surl");
+      if (!surl) {{
+        const original = new URL(shareUrl);
+        const originalParts = original.pathname.split("/").filter(Boolean);
+        const originalIndex = originalParts.findIndex(part => part.toLowerCase() === "s");
+        if (originalIndex >= 0 && originalParts[originalIndex + 1]) surl = originalParts[originalIndex + 1];
+        if (!surl) surl = original.searchParams.get("surl");
+      }}
+
+      if (!jsToken) throw new Error("jsToken Terabox tidak ditemukan");
+      if (!surl) throw new Error("Kode share Terabox tidak ditemukan");
+
+      if (!dpLogId) dpLogId = String(Date.now()) + String(Math.floor(Math.random() * 9000 + 1000));
+
+      const common = new URLSearchParams({
+        app_id: "250528",
+        web: "1",
+        channel: "dubox",
+        clienttype: "0",
+        jsToken,
+        "dp-logid": dpLogId
+      });
+
+      // Step 1: obtain share metadata. This response contains shareid, uk,
+      // sign, timestamp and the file list including fs_id.
+      const infoUrl = new URL("/api/shorturlinfo", location.origin);
+      for (const [key, value] of common) infoUrl.searchParams.set(key, value);
+      infoUrl.searchParams.set("shorturl", surl);
+      infoUrl.searchParams.set("root", "1");
+      infoUrl.searchParams.set("scene", "");
+
+      const infoResponse = await fetch(infoUrl.toString(), {{
+        credentials: "include",
+        headers: {{ "Accept": "application/json, text/plain, */*" }}
+      }});
+      const infoText = await infoResponse.text();
+      let info;
+      try {{ info = JSON.parse(infoText); }} catch (_) {{
+        throw new Error("Terabox shorturlinfo bukan JSON");
+      }}
+
+      if (!infoResponse.ok || Number(info.errno) !== 0) {{
+        throw new Error(`Terabox metadata gagal (HTTP ${{infoResponse.status}}, errno ${{info.errno ?? "?"}}): ${{info.show_msg || "unknown"}}`);
+      }}
+
+      const list = Array.isArray(info.list) ? info.list : [];
+      const file = list.find(item => Number(item?.isdir || 0) === 0) || list[0];
+      if (!file || !file.fs_id) throw new Error("File pada share Terabox tidak ditemukan");
+
+      const shareId = info.shareid ?? info.share_id ?? file.shareid;
+      const uk = info.uk ?? info.share_uk ?? file.uk;
+      const sign = info.sign;
+      const timestamp = info.timestamp;
+
+      if (!shareId || !uk || !sign || !timestamp) {{
+        throw new Error("Metadata download Terabox tidak lengkap (shareid/uk/sign/timestamp)");
+      }}
+
+      // Step 2: ask Terabox for the actual dlink using the metadata above.
+      const downloadUrl = new URL("/share/download", location.origin);
+      for (const [key, value] of common) downloadUrl.searchParams.set(key, value);
+      downloadUrl.searchParams.set("shareid", String(shareId));
+      downloadUrl.searchParams.set("sign", String(sign));
+      downloadUrl.searchParams.set("timestamp", String(timestamp));
+
+      const body = new URLSearchParams({
+        product: "share",
+        nozip: "0",
+        fid_list: JSON.stringify([Number(file.fs_id)]),
+        uk: String(uk),
+        primaryid: String(shareId)
+      });
+
+      const downloadResponse = await fetch(downloadUrl.toString(), {{
+        method: "POST",
+        credentials: "include",
+        headers: {{
+          "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+          "Accept": "application/json, text/plain, */*"
+        }},
+        body: body.toString()
+      }});
+
+      const downloadText = await downloadResponse.text();
+      let downloadData;
+      try {{ downloadData = JSON.parse(downloadText); }} catch (_) {{
+        throw new Error("Terabox share/download bukan JSON");
+      }}
+
+      if (!downloadResponse.ok || Number(downloadData.errno) !== 0) {{
+        throw new Error(`Terabox download API gagal (HTTP ${{downloadResponse.status}}, errno ${{downloadData.errno ?? "?"}}): ${{downloadData.show_msg || "unknown"}}`);
+      }}
+
+      const returned = Array.isArray(downloadData.list) ? downloadData.list : [];
+      const returnedFile = returned.find(item => String(item.fs_id) === String(file.fs_id)) || returned[0];
+      const dlink = returnedFile?.dlink || downloadData.dlink || file.dlink;
+
+      if (!dlink) throw new Error("Terabox API selesai tetapi dlink kosong");
 
       return {{
         data: {{
           dlink,
-          url: page.url(),
-          title: await page.title()
+          filename: file.server_filename || file.filename || "",
+          fs_id: String(file.fs_id),
+          shareid: String(shareId),
+          uk: String(uk)
         }},
         type: "application/json"
       }};
