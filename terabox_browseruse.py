@@ -97,7 +97,7 @@ def _extract_files(value):
                     if isinstance(th, dict):
                         cand = th.get("url3") or th.get("url2") or th.get("url1")
                         thumb = cand if isinstance(cand, str) else None
-                ld = obj.get("listDlink")
+                ld = obj.get("downloadDlink") or obj.get("listDlink")
                 files.append({"filename": name, "size": size, "dlink": dlink,
                               "thumb": thumb if isinstance(thumb, str) else None,
                               "list_dlink": ld if isinstance(ld, str) else None})
@@ -169,7 +169,7 @@ async def get_terabox_dlink(share_url: str) -> dict:
     code = r'''export default async ({ page }) => {
       const shareUrl = __SHARE_URL__;
       const injectedNdus = __NDUS__;
-      const captured = { jsToken: null, dpLogId: null, shorturlinfo: null, shareList: null, downloadResponses: [], resourceUrls: [] };
+      const captured = { jsToken: null, shorturlinfo: null, shareList: null, downloadResponses: [], resourceUrls: [] };
       const pickThumb = (f) => {
         try {
           const t = f && f.thumbs;
@@ -181,9 +181,7 @@ async def get_terabox_dlink(share_url: str) -> dict:
         try {
           const parsed = new URL(url);
           const token = parsed.searchParams.get("jsToken");
-          const logid = parsed.searchParams.get("dp-logid");
           if (token) captured.jsToken = token;
-          if (logid) captured.dpLogId = logid;
         } catch (_) {}
       };
       page.on("request", r => rememberRequest(r.url()));
@@ -281,7 +279,6 @@ async def get_terabox_dlink(share_url: str) -> dict:
         const m = html.match(/surl[=:]["']?([A-Za-z0-9_-]{8,})/i);
         if (m) { surl = m[1]; if (surl.startsWith("1") && surl.length > 15) surl = surl.slice(1); }
       }
-      if (!captured.dpLogId) captured.dpLogId = String(Date.now()) + String(Math.floor(Math.random() * 9000 + 1000));
       const origin = (() => { try { return new URL(currentUrl).origin; } catch (_) { try { return new URL(shareUrl).origin; } catch (__) { return "https://www.terabox.com"; } } })();
       try {
         const ckA = await page.evaluate(() => document.cookie || "");
@@ -296,7 +293,7 @@ async def get_terabox_dlink(share_url: str) -> dict:
         }
       } catch (_) {}
       const commonParams = () => {
-        const p = new URLSearchParams({ app_id: "250528", web: "1", channel: "dubox", clienttype: "0", "dp-logid": captured.dpLogId });
+        const p = new URLSearchParams({ app_id: "250528", web: "1", channel: "dubox", clienttype: "0" });
         if (captured.jsToken) p.set("jsToken", captured.jsToken);
         return p;
       };
@@ -443,10 +440,12 @@ async def get_terabox_dlink(share_url: str) -> dict:
         const listDlink = (typeof file.dlink === "string" && file.dlink.startsWith("http")) ? file.dlink : null;
         let dlDlink = await tryShareDownload(fsId);
         if (!dlDlink) for (const dr of captured.downloadResponses) { dlDlink = extractDlinkFromPayload(dr.data, fsId); if (dlDlink) break; }
-        const dlink = dlDlink || listDlink;
+        // Prioritas: dlink langsung dari /share/list (pola tools yang terbukti jalan);
+        // /share/download hanya fallback.
+        const dlink = listDlink || dlDlink;
         if (!dlink) continue;
         const entry = { filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file) };
-        if (results.length === 0 && dlDlink && listDlink && dlDlink !== listDlink) entry.listDlink = listDlink;
+        if (results.length === 0 && dlDlink && listDlink && dlDlink !== listDlink) entry.downloadDlink = dlDlink;
         results.push(entry);
       }
       if (!results.length) throw new Error("Terabox API selesai tetapi dlink kosong. debug=" + JSON.stringify(debugLog).slice(0, 900));
@@ -467,7 +466,35 @@ async def get_terabox_dlink(share_url: str) -> dict:
         }
       } catch (e) { dlinkProbe = { error: String(e && e.message || e).slice(0, 100) }; }
       debugLog.push({ step: "dlink_probe", probe: dlinkProbe });
-      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, ndusCookieOk: !!captured.ndusCookieOk, dlinkProbe }, type: "application/json" };
+      // Probe pembanding: sesi BERSIH (incognito context) berisi HANYA cookie NDUS,
+      // tanpa cookie lain (browserid/csrfToken/lang). Pola videoextractbot: dlink
+      // harus diakses dengan sesi bersih + UA yang sama.
+      let dlinkProbeClean = null;
+      try {
+        const probeUrl2 = results[0] && results[0].dlink;
+        if (probeUrl2 && injectedNdus) {
+          const bctx = await page.browser().createBrowserContext();
+          const cp = await bctx.newPage();
+          try {
+            await cp.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            const dOrigin = new URL(probeUrl2).origin;
+            await cp.setCookie({ name: "NDUS", value: injectedNdus, url: dOrigin, path: "/" });
+            await cp.setExtraHTTPHeaders({ "Range": "bytes=0-1023" });
+            const r2 = await cp.goto(probeUrl2, { waitUntil: "domcontentloaded", timeout: 25000 }).catch(e => null);
+            if (r2 && typeof r2.status === "function") {
+              let b2 = "";
+              try { b2 = (await r2.text().catch(() => "")).slice(0, 120); } catch (_) {}
+              dlinkProbeClean = { status: r2.status(), finalUrl: (r2.url() || "").slice(0, 90), bodyHead: b2 };
+            } else {
+              dlinkProbeClean = { error: "goto_no_response" };
+            }
+          } finally {
+            try { await bctx.close(); } catch (_) {}
+          }
+        }
+      } catch (e) { dlinkProbeClean = { error: String(e && e.message || e).slice(0, 100) }; }
+      debugLog.push({ step: "dlink_probe_clean", probe: dlinkProbeClean });
+      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, ndusCookieOk: !!captured.ndusCookieOk, dlinkProbe, dlinkProbeClean }, type: "application/json" };
     };'''
     code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus)
     try:
@@ -486,7 +513,7 @@ async def get_terabox_dlink(share_url: str) -> dict:
     dlink = _extract_dlink(result)
     if files:
         rdata = result.get("data", {}) if isinstance(result, dict) else {}
-        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename"), "ndus_cookie_ok": rdata.get("ndusCookieOk"), "dlink_probe": rdata.get("dlinkProbe")}
+        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename"), "ndus_cookie_ok": rdata.get("ndusCookieOk"), "dlink_probe": rdata.get("dlinkProbe"), "dlink_probe_clean": rdata.get("dlinkProbeClean")}
     if dlink:
         return {"success": True, "dlink": dlink, "files": [{"filename": "file", "dlink": dlink}]}
     fb = _try_public_fallbacks(share_url)
