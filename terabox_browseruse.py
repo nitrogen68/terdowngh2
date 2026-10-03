@@ -347,20 +347,27 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
       // Jika share hanya berisi folder: coba list isi folder pertama
       if (!files.length && fileList.length) {
         const dir = fileList.find(item => Number(item?.isdir || 0) === 1);
-        if (dir && dir.fs_id) {
-          try {
-            const dirUrl = new URL("/share/list", origin);
-            const dp = commonParams();
-            dp.set("shorturl", surl);
-            dp.set("dir", String(dir.fs_id));
-            dp.set("page", "1"); dp.set("num", "100");
-            for (const [k, v] of dp.entries()) dirUrl.searchParams.set(k, v);
-            const dr = await pageFetchJson(dirUrl.toString(), { headers: { "Referer": currentUrl || shareUrl } });
-            if (dr && dr.data && !dr.nonJson && Number(dr.data.errno) === 0 && Array.isArray(dr.data.list)) {
-              const dirFiles = dr.data.list.filter(item => Number(item?.isdir || 0) === 0);
-              if (dirFiles.length) files = dirFiles;
-            }
-          } catch (_) { /* fallback ke error di bawah */ }
+        if (dir && (dir.fs_id || dir.path)) {
+          // Coba beberapa varian parameter dir (path dan fs_id)
+          const dirCandidates = [];
+          if (dir.path) dirCandidates.push(String(dir.path));
+          if (dir.server_filename) dirCandidates.push("/" + String(dir.server_filename));
+          if (dir.fs_id) dirCandidates.push(String(dir.fs_id));
+          for (const dirVal of dirCandidates) {
+            try {
+              const dirUrl = new URL("/share/list", origin);
+              const dp = commonParams();
+              dp.set("shorturl", surl);
+              dp.set("dir", dirVal);
+              dp.set("page", "1"); dp.set("num", "100");
+              for (const [k, v] of dp.entries()) dirUrl.searchParams.set(k, v);
+              const dr = await pageFetchJson(dirUrl.toString(), { headers: { "Referer": currentUrl || shareUrl } });
+              if (dr && dr.data && !dr.nonJson && Number(dr.data.errno) === 0 && Array.isArray(dr.data.list)) {
+                const dirFiles = dr.data.list.filter(item => Number(item?.isdir || 0) === 0);
+                if (dirFiles.length) { files = dirFiles; break; }
+              }
+            } catch (_) { /* coba kandidat berikutnya */ }
+          }
         }
       }
       if (!files.length) throw new Error("Tidak ada file di share (mungkin hanya berisi folder kosong)");
