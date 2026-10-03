@@ -366,10 +366,15 @@ async def get_terabox_dlink(share_url: str, fid: str = None, path: str = None) -
       if (!surl) throw new Error("Kode share (surl) tidak ditemukan");
       if (!info || Number(info.errno) !== 0) throw new Error("Terabox metadata gagal (errno " + (info?.errno ?? "?") + "): " + (info?.show_msg || info?.errmsg || "unknown"));
       const fileList = Array.isArray(info.list) ? info.list : [];
-      let files = fileList.filter(item => Number(item?.isdir || 0) === 0);
-      // Jika share hanya berisi folder: otomatis list isi folder pertama
-      if (!files.length && fileList.length) {
-        const dir = fileList.find(item => Number(item?.isdir || 0) === 1);
+      // Simpan semua item (file + folder). Folder ditandai isdir=1.
+      let files = fileList.slice();
+      const onlyFiles = files.filter(item => Number(item?.isdir || 0) === 0);
+      const onlyDirs = files.filter(item => Number(item?.isdir || 0) === 1);
+      // Jika HANYA ada satu folder (kasus umum): otomatis masuk ke foldernya
+      // agar user langsung lihat isinya (perilaku yang sudah terbukti jalan).
+      // Jika ada banyak folder: tampilkan sebagai folder agar user bisa pilih.
+      if (!onlyFiles.length && onlyDirs.length === 1) {
+        const dir = onlyDirs[0];
         if (dir && (dir.fs_id || dir.path)) {
           const dirCandidates = [];
           if (dir.path) dirCandidates.push(String(dir.path));
@@ -386,7 +391,7 @@ async def get_terabox_dlink(share_url: str, fid: str = None, path: str = None) -
               const dr = await pageFetchJson(dirUrl.toString(), { headers: { "Referer": currentUrl || shareUrl } });
               if (dr && dr.data && !dr.nonJson && Number(dr.data.errno) === 0 && Array.isArray(dr.data.list)) {
                 const dirFiles = dr.data.list.filter(item => Number(item?.isdir || 0) === 0);
-                if (dirFiles.length) { files = dirFiles; break; }
+                if (dirFiles.length) { files = dr.data.list.slice(); break; }
               }
             } catch (_) { /* coba kandidat berikutnya */ }
           }
@@ -500,15 +505,19 @@ async def get_terabox_dlink(share_url: str, fid: str = None, path: str = None) -
       };
       for (const file of files.slice(0, 10)) {
         const fsId = file.fs_id;
-        if (!fsId) continue;
+        const isDir = Number(file.isdir || 0) === 1;
+        if (!fsId && !isDir) continue;
         const listDlink = (typeof file.dlink === "string" && file.dlink.startsWith("http")) ? file.dlink : null;
-        let dlDlink = await tryShareDownload(fsId);
-        if (!dlDlink) for (const dr of captured.downloadResponses) { dlDlink = extractDlinkFromPayload(dr.data, fsId); if (dlDlink) break; }
+        let dlDlink = null;
+        if (!isDir) {
+          dlDlink = await tryShareDownload(fsId);
+          if (!dlDlink) for (const dr of captured.downloadResponses) { dlDlink = extractDlinkFromPayload(dr.data, fsId); if (dlDlink) break; }
+        }
         // Prioritas: dlink langsung dari /share/list (pola tools yang terbukti jalan);
         // /share/download hanya fallback.
         const dlink = listDlink || dlDlink;
-        if (!dlink) continue;
-        const entry = { filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file), fs_id: String(file.fs_id || "") };
+        if (!dlink && !isDir) continue;
+        const entry = { filename: file.server_filename || file.filename || "file", size: file.size, dlink: dlink || null, thumb: pickThumb(file), fs_id: String(file.fs_id || ""), isdir: isDir ? 1 : 0, path: file.path || null };
         if (results.length === 0 && dlDlink && listDlink && dlDlink !== listDlink) entry.downloadDlink = dlDlink;
         results.push(entry);
       }
