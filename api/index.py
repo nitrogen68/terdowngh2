@@ -223,6 +223,11 @@ class Handler(BaseHTTPRequestHandler):
         if path in ("/health", "/api/health"):
             self._json({"status": "ok"})
             return
+        if path in ("/privacy", "/privacy.html"):
+            if self._html(os.path.join(os.path.dirname(__file__), "privacy.html")):
+                return
+            self._json({"error": "not found"}, 404)
+            return
         if path == "/api/debug":
             ndus = (os.environ.get("TERABOX_NDUS") or "").strip()
             if ndus.lower().startswith("ndus="):
