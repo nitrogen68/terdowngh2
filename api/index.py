@@ -5,6 +5,7 @@ from urllib import request as urlrequest, error as urlerror
 from urllib.parse import urlparse, parse_qs
 import asyncio
 import os
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
@@ -14,6 +15,86 @@ from terabox_browseruse import get_terabox_dlink
 
 # --- Messenger webhook (Terastream) ---
 MESSENGER_VERIFY_TOKEN = "TsVrf_jjEAyMqaUK7BxsWb1Wl5S9mEFtjFrrzw"
+
+FB_GRAPH_URL = "https://graph.facebook.com/v18.0/me/messages"
+
+
+def _send_messenger(psid, text):
+    """Kirim pesan teks via Messenger Send API. Token dari env MESSENGER_PAGE_TOKEN."""
+    token = (os.environ.get("MESSENGER_PAGE_TOKEN") or "").strip()
+    if not token or not psid or not text:
+        return False
+    payload = json.dumps({
+        "recipient": {"id": str(psid)},
+        "messaging_type": "RESPONSE",
+        "message": {"text": text[:2000]},
+    }).encode("utf-8")
+    try:
+        req = urlrequest.Request(
+            FB_GRAPH_URL + "?access_token=" + token,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlrequest.urlopen(req, timeout=15) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def _extract_terabox_url(text):
+    """Cari URL Terabox/1024terabox/mirrobox di teks pesan."""
+    m = re.search(r"https?://[^\s]*?(?:terabox|1024terabox|mirrobox|teraboxapp)[^\s]*", text or "", re.I)
+    return m.group(0) if m else None
+
+
+def _handle_messenger_event(body):
+    """Proses event webhook Messenger: balas link Terabox dengan hasil."""
+    if not isinstance(body, dict) or body.get("object") != "page":
+        return
+    for entry in body.get("entry", []) or []:
+        for ev in entry.get("messaging", []) or []:
+            psid = (ev.get("sender") or {}).get("id")
+            msg = ev.get("message") or {}
+            text = msg.get("text", "") or ""
+            if not psid or not text or msg.get("is_echo"):
+                continue
+            url = _extract_terabox_url(text)
+            if not url:
+                _send_messenger(psid,
+                    "Halo! 👋 Kirim link Terabox (mis. https://1024terabox.com/s/xxxx) "
+                    "dan aku ambilkan daftar file-nya. 🚀")
+                continue
+            _send_messenger(psid, "Siap! Lagi ambil info link-nya, tunggu sebentar ya... ⏳")
+            try:
+                result = asyncio.run(get_terabox_dlink(url.strip()))
+            except Exception as exc:
+                _send_messenger(psid,
+                    f"Yah, gagal proses link-nya ({type(exc).__name__}). Coba lagi nanti ya. 🙏")
+                continue
+            if not result.get("success"):
+                _send_messenger(psid,
+                    f"Gagal ambil info: {result.get('error', 'unknown')}. "
+                    "Pastikan link-nya benar & publik ya.")
+                continue
+            lines = ["✅ Link berhasil diproses!"]
+            files = result.get("files") or []
+            if files:
+                lines.append(f"📁 {len(files)} item ditemukan:")
+                for f in files[:10]:
+                    nm = f.get("name") or "file"
+                    sz = f.get("size") or ""
+                    isdir = f.get("isdir")
+                    icon = "📁" if isdir else "🎬"
+                    lines.append(f"{icon} {nm} {sz}".strip())
+                if len(files) > 10:
+                    lines.append(f"...dan {len(files) - 10} item lainnya.")
+            elif result.get("filename"):
+                lines.append(f"📄 {result['filename']}")
+            lines.append("")
+            lines.append("Streaming & download di web:")
+            lines.append("https://terdowngh.vercel.app/")
+            _send_messenger(psid, "\n".join(lines))
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -173,14 +254,17 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         path = self.path.split("?")[0]
         if path in ("/webhook", "/api/webhook"):
-            # Terima event Messenger (Phase 1: acknowledge; Phase 2: auto-reply)
+            # Terima event Messenger: 200 dulu (biar Meta tidak retry), lalu proses & balas
             try:
                 length = int(self.headers.get("Content-Length", 0))
                 body = json.loads(self.rfile.read(length)) if length else {}
             except Exception:
                 body = {}
-            # TODO Phase 2: proses messaging events & balas via Send API
             self._json({"status": "EVENT_RECEIVED"})
+            try:
+                _handle_messenger_event(body)
+            except Exception:
+                pass
             return
         if path not in ("/api/terabox/direct", "/api/terabox/direct/"):
             self._json({"error": "not found"}, 404)
