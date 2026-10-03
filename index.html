@@ -226,9 +226,18 @@
       }, 1000);
     }
 
-    function showError(message) {
+    function showError(message, detail) {
       stopLoadingTimer();
-      errorBox.textContent = message;
+      errorBox.innerHTML = '';
+      const main = document.createElement('div');
+      main.textContent = message;
+      errorBox.appendChild(main);
+      if (detail) {
+        const det = document.createElement('div');
+        det.className = 'mt-2 text-xs opacity-80 break-words font-mono';
+        det.textContent = 'Detail: ' + detail;
+        errorBox.appendChild(det);
+      }
       errorBox.classList.remove('hidden');
       loading.classList.add('hidden');
       result.classList.add('hidden');
@@ -708,7 +717,9 @@
           : [{ filename: data.filename, size: null, dlink: data.dlink, thumb: data.thumb || null }]
         );
         if (!response.ok || !data.ok || !_filesRaw.length) {
-          throw new Error(data.error || 'Gagal mendapatkan link download.');
+          const err = new Error(data.error || 'Gagal mendapatkan link download.');
+          err.detail = data.detail || null;
+          throw err;
         }
         // Simpan data HLS untuk streaming via hls.js
         window._hlsData = data.hls || null;
@@ -726,7 +737,7 @@
         submitBtn.disabled = false;
         btnLabel.textContent = 'Dapatkan Link';
       } catch (error) {
-        showError(error.message || 'Terjadi kesalahan jaringan.');
+        showError(error.message || 'Terjadi kesalahan jaringan.', error.detail || null);
       }
     });
 
