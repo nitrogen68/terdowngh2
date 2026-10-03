@@ -463,51 +463,6 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
         results.push(entry);
       }
       if (!results.length) throw new Error("Terabox API selesai tetapi dlink kosong. debug=" + JSON.stringify(debugLog).slice(0, 900));
-      let dlinkProbe = null;
-      try {
-        const probeUrl = results[0] && results[0].dlink;
-        if (probeUrl) {
-          try { await page.setExtraHTTPHeaders({ "Range": "bytes=0-1023" }); } catch (_) {}
-          const resp = await page.goto(probeUrl, { waitUntil: "domcontentloaded", timeout: 25000 }).catch(e => null);
-          try { await page.setExtraHTTPHeaders({}); } catch (_) {}
-          if (resp && typeof resp.status === "function") {
-            let bHead = "";
-            try { bHead = (await resp.text().catch(() => "")).slice(0, 120); } catch (_) {}
-            dlinkProbe = { status: resp.status(), finalUrl: (resp.url() || "").slice(0, 90), bodyHead: bHead };
-          } else {
-            dlinkProbe = { error: "goto_no_response" };
-          }
-        }
-      } catch (e) { dlinkProbe = { error: String(e && e.message || e).slice(0, 100) }; }
-      debugLog.push({ step: "dlink_probe", probe: dlinkProbe });
-      // Probe pembanding: sesi BERSIH (incognito context) berisi HANYA cookie NDUS,
-      // tanpa cookie lain (browserid/csrfToken/lang). Pola videoextractbot: dlink
-      // harus diakses dengan sesi bersih + UA yang sama.
-      let dlinkProbeClean = null;
-      try {
-        const probeUrl2 = results[0] && results[0].dlink;
-        if (probeUrl2 && injectedNdus) {
-          const bctx = await page.browser().createBrowserContext();
-          const cp = await bctx.newPage();
-          try {
-            await cp.setUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
-            const dOrigin = new URL(probeUrl2).origin;
-            await cp.setCookie({ name: "NDUS", value: injectedNdus, url: dOrigin, path: "/" });
-            await cp.setExtraHTTPHeaders({ "Range": "bytes=0-1023" });
-            const r2 = await cp.goto(probeUrl2, { waitUntil: "domcontentloaded", timeout: 25000 }).catch(e => null);
-            if (r2 && typeof r2.status === "function") {
-              let b2 = "";
-              try { b2 = (await r2.text().catch(() => "")).slice(0, 120); } catch (_) {}
-              dlinkProbeClean = { status: r2.status(), finalUrl: (r2.url() || "").slice(0, 90), bodyHead: b2 };
-            } else {
-              dlinkProbeClean = { error: "goto_no_response" };
-            }
-          } finally {
-            try { await bctx.close(); } catch (_) {}
-          }
-        }
-      } catch (e) { dlinkProbeClean = { error: String(e && e.message || e).slice(0, 100) }; }
-      debugLog.push({ step: "dlink_probe_clean", probe: dlinkProbeClean });
       // === HLS full: /share/streaming adalah jalur RESMI klien untuk video.
       // Kumpulkan SEMUA chunks (tiap request memberi subset acak) dengan
       // sequence number yang benar dari #EXT-X-MEDIA-SEQUENCE + #EXTINF.
@@ -572,7 +527,7 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
         }
       } catch (e) { hlsInfo = { error: String(e && e.message || e).slice(0, 100) }; }
       debugLog.push({ step: "hls", total: hlsInfo && hlsInfo.total, error: hlsInfo && hlsInfo.error });
-      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, ndusCookieOk: !!captured.ndusCookieOk, dlinkProbe, dlinkProbeClean, hls: hlsInfo }, type: "application/json" };
+      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, hls: hlsInfo }, type: "application/json" };
     };'''
     safe_fid = json.dumps(str(fid) if fid else "")
     code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus).replace("__FID__", safe_fid)
@@ -602,7 +557,7 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
                 if not f.get("fs_id") and hls_fn and f.get("filename") == hls_fn:
                     f["fs_id"] = str(hls_fid)
                     break
-        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename"), "ndus_cookie_ok": rdata.get("ndusCookieOk"), "dlink_probe": rdata.get("dlinkProbe"), "dlink_probe_clean": rdata.get("dlinkProbeClean"), "hls": rdata.get("hls")}
+        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename"), "hls": rdata.get("hls")}
     if dlink:
         return {"success": True, "dlink": dlink, "files": [{"filename": "file", "dlink": dlink}]}
     fb = _try_public_fallbacks(share_url)
