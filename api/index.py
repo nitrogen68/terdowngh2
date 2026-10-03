@@ -181,11 +181,13 @@ class Handler(BaseHTTPRequestHandler):
                 path = str(path).strip() or None
             result = asyncio.run(get_terabox_dlink(url.strip(), fid=fid, path=path))
         except Exception as exc:
-            self._json({"error": f"failed: {exc}"}, 500)
+            import traceback
+            err_detail = f"{type(exc).__name__}: {exc}"
+            self._json({"error": "Gagal mendapatkan link download.", "detail": err_detail, "traceback": traceback.format_exc()[-500:]}, 500)
             return
 
         if not result.get("success"):
-            self._json({"error": result.get("error", "Gagal mendapatkan dlink")}, 400)
+            self._json({"error": "Gagal mendapatkan link download.", "detail": result.get("error", "Unknown backend error")}, 400)
             return
 
         payload = {
