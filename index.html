@@ -297,6 +297,51 @@
       return wrap;
     }
 
+    let currentShareUrl = '';
+    let currentPath = '';
+    async function openFolder(folder) {
+      const path = folder.path || '';
+      if (!path) { showDiagnostic({title:'ERROR', note:'Folder tidak memiliki path', rawBody:JSON.stringify(folder)}); return; }
+      currentPath = path;
+      setLoading(true);
+      btnLabel.textContent = 'Membuka folder...';
+      const reqStart = Date.now();
+      try {
+        const resp = await fetch('/api/terabox/direct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
+          body: JSON.stringify({ url: currentShareUrl, path: path })
+        });
+        const data = await resp.json().catch(() => ({}));
+        setLoading(false);
+        if (data.ok && Array.isArray(data.files)) {
+          const items = data.files.map(ff => ({
+            filename: ff.filename || 'Item', size: ff.size || null, dlink: ff.dlink || null,
+            thumb: ff.thumb || null, isdir: ff.isdir || 0, path: ff.path || '', fs_id: ff.fs_id || ''
+          }));
+          renderFiles(items);
+          resultTitle.textContent = '📁 ' + (folder.filename || 'Folder') + ' (' + items.length + ' item)';
+          result.classList.remove('hidden');
+          // Tombol kembali
+          let backBtn = document.getElementById('backBtn');
+          if (!backBtn) {
+            backBtn = document.createElement('button');
+            backBtn.id = 'backBtn';
+            backBtn.className = 'mb-3 px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-sm font-medium';
+            backBtn.textContent = '← Kembali';
+            backBtn.onclick = () => { currentPath=''; document.getElementById('submitBtn').click(); };
+            result.insertBefore(backBtn, result.firstChild);
+          }
+          backBtn.classList.remove('hidden');
+        } else {
+          showDiagnostic({title:'FOLDER ERROR', note:'Gagal membuka folder', rawBody:JSON.stringify(data).slice(0,2000), elapsedMs: Date.now()-reqStart, status: resp.status});
+        }
+      } catch(e) {
+        setLoading(false);
+        showDiagnostic({title:'FOLDER EXCEPTION', note:String(e.message||e), rawBody:'', elapsedMs: Date.now()-reqStart});
+      }
+    }
     function renderFiles(files) {
       fileList.innerHTML = '';
       files.forEach((f) => {
@@ -310,7 +355,9 @@
 
         const thumbWrap = document.createElement('div');
         thumbWrap.className = 'w-16 h-16 rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 shrink-0 flex items-center justify-center';
-        if (f.thumb) {
+        if (isFolder) {
+          thumbWrap.innerHTML = '<span style="font-size:32px">📁</span>';
+        } else if (f.thumb) {
           const img = document.createElement('img');
           img.src = f.thumb;
           img.alt = '';
@@ -338,7 +385,11 @@
           (kind === 'video' ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
             : kind === 'audio' ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300'
             : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400');
-        kindBadge.textContent = kind === 'video' ? 'Video' : kind === 'audio' ? 'Audio' : kind === 'image' ? 'Gambar' : 'File';
+        const isFolder = f.isdir == 1;
+        kindBadge.textContent = isFolder ? '📁 Folder' : kind === 'video' ? 'Video' : kind === 'audio' ? 'Audio' : kind === 'image' ? 'Gambar' : 'File';
+        if (isFolder) {
+          kindBadge.className = 'text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300';
+        }
         sub.appendChild(kindBadge);
         const size = fmtSize(f.size);
         if (size) {
@@ -349,6 +400,11 @@
         }
         meta.appendChild(sub);
         top.appendChild(meta);
+        if (isFolder) {
+          card.style.cursor = 'pointer';
+          card.title = 'Klik untuk membuka folder';
+          card.addEventListener('click', () => openFolder(f));
+        }
 
         if (kind === 'video' || kind === 'audio') {
           const playBtn = document.createElement('button');
@@ -370,7 +426,7 @@
     // Download via HLS chunks (lolos 31045): ambil semua segmen via proxy,
     // gabung jadi satu file .ts yang bisa diputar.
     // URL share disimpan untuk fetch HLS per-file bila diperlukan.
-    let currentShareUrl = '';
+
 
     // Ambil data HLS untuk file tertentu. Pakai cache bila fid cocok,
     // jika tidak fetch ke backend dengan fid file tersebut.
