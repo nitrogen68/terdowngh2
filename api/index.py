@@ -102,11 +102,15 @@ class Handler(BaseHTTPRequestHandler):
             headers["Range"] = range_h
         try:
             req = urlrequest.Request(chunk_url, headers=headers, method="GET")
-            with urlrequest.urlopen(req, timeout=30) as resp:
-                data = resp.read()
-                ctype = resp.headers.get("Content-Type", "video/mp2t")
-                crange = resp.headers.get("Content-Range")
-                status = resp.getcode()
+            upstream = urlrequest.urlopen(req, timeout=30)
+            try:
+                ctype = upstream.headers.get("Content-Type", "video/mp2t")
+                crange = upstream.headers.get("Content-Range")
+                clen = upstream.headers.get("Content-Length")
+                status = upstream.getcode()
+            except Exception:
+                upstream.close()
+                raise
         except urlerror.HTTPError as exc:
             try:
                 data = exc.read()
@@ -122,16 +126,29 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             self._json({"error": f"proxy failed: {exc}"}, 502)
             return
-        self.send_response(status)
-        self.send_header("Content-Type", ctype)
-        self.send_header("Content-Length", str(len(data)))
-        self.send_header("Accept-Ranges", "bytes")
-        if crange:
-            self.send_header("Content-Range", crange)
-        self.send_header("Cache-Control", "public, max-age=3600")
-        self.send_header("Access-Control-Allow-Origin", "*")
-        self.end_headers()
-        self.wfile.write(data)
+        # Stream respons (jangan buffer seluruh chunk di memori)
+        try:
+            self.send_response(status)
+            self.send_header("Content-Type", ctype)
+            if clen:
+                self.send_header("Content-Length", clen)
+            self.send_header("Accept-Ranges", "bytes")
+            if crange:
+                self.send_header("Content-Range", crange)
+            self.send_header("Cache-Control", "public, max-age=3600")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            while True:
+                buf = upstream.read(65536)
+                if not buf:
+                    break
+                self.wfile.write(buf)
+        finally:
+            try:
+                upstream.close()
+            except Exception:
+                pass
+        return
 
     def do_POST(self):
         path = self.path.split("?")[0]
