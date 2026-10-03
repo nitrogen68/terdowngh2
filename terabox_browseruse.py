@@ -401,7 +401,10 @@ async def get_terabox_dlink(share_url: str, fid: str = None, path: str = None) -
       const timestamp = info.timestamp;
       if (!shareId || !uk || !sign || !timestamp) {
         const results = [];
-        for (const f of files) if (f.dlink) results.push({ filename: f.server_filename || "file", size: f.size, dlink: f.dlink, thumb: pickThumb(f), fs_id: String(f.fs_id || "") });
+        for (const f of files) {
+          const isDir = Number(f.isdir || 0) === 1;
+          if (f.dlink || isDir) results.push({ filename: f.server_filename || "file", size: f.size, dlink: f.dlink || null, thumb: pickThumb(f), fs_id: String(f.fs_id || ""), isdir: isDir ? 1 : 0, path: f.path || null });
+        }
         for (const dr of captured.downloadResponses) {
           const lst = Array.isArray(dr.data?.list) ? dr.data.list : [];
           for (const item of lst) if (item.dlink) results.push({ filename: item.server_filename || "file", size: item.size, dlink: item.dlink, thumb: pickThumb(item), fs_id: String(item.fs_id || "") });
