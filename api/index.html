@@ -103,6 +103,7 @@
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
+      <div id="streamMode" class="text-xs text-slate-500 dark:text-slate-400 px-4 pt-2"></div>
       <video id="streamVideo" class="w-full max-h-[70vh] bg-black" controls playsinline preload="metadata" referrerpolicy="no-referrer"></video>
       <p id="streamError" class="hidden px-4 py-3 text-sm text-red-600 dark:text-red-400"></p>
     </div>
@@ -346,6 +347,8 @@
       streamError.textContent = '';
       streamModal.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
+      const modeEl = document.getElementById('streamMode');
+      if (modeEl) modeEl.textContent = '';
       // Prioritas 1: HLS via /share/streaming (jalur resmi, lolos 31045)
       const hlsData = window._hlsData;
       const hlsUrl = buildHlsBlobUrl(hlsData);
@@ -365,6 +368,7 @@
               }
             });
             hls.loadSource(hlsUrl);
+            if (modeEl) modeEl.textContent = 'Mode: HLS (' + (hlsData.chunks.length) + ' segmen via proxy)';
             hls.attachMedia(streamVideo);
             streamVideo.play().catch(() => {});
             return;
@@ -375,6 +379,7 @@
           return;
         }
       }
+      if (modeEl) modeEl.textContent = 'Mode: direct link (fallback)';
       // Prioritas 2 (fallback): dlink langsung (cara lama)
       streamVideo.setAttribute('referrerpolicy', 'no-referrer');
       streamVideo.src = file.dlink;
