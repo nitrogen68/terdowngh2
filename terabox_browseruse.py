@@ -366,9 +366,32 @@ async def get_terabox_dlink(share_url: str, fid: str = None, path: str = None) -
       if (!surl) throw new Error("Kode share (surl) tidak ditemukan");
       if (!info || Number(info.errno) !== 0) throw new Error("Terabox metadata gagal (errno " + (info?.errno ?? "?") + "): " + (info?.show_msg || info?.errmsg || "unknown"));
       const fileList = Array.isArray(info.list) ? info.list : [];
-      // Kembalikan semua item (file + folder). Folder ditandai isdir=1 agar
-      // frontend bisa tampilkan ikon folder dan navigasi masuk.
-      let files = fileList.slice();
+      let files = fileList.filter(item => Number(item?.isdir || 0) === 0);
+      // Jika share hanya berisi folder: otomatis list isi folder pertama
+      if (!files.length && fileList.length) {
+        const dir = fileList.find(item => Number(item?.isdir || 0) === 1);
+        if (dir && (dir.fs_id || dir.path)) {
+          const dirCandidates = [];
+          if (dir.path) dirCandidates.push(String(dir.path));
+          if (dir.server_filename) dirCandidates.push("/" + String(dir.server_filename));
+          if (dir.fs_id) dirCandidates.push(String(dir.fs_id));
+          for (const dirVal of dirCandidates) {
+            try {
+              const dirUrl = new URL("/share/list", origin);
+              const dp = commonParams();
+              dp.set("shorturl", surl);
+              dp.set("dir", dirVal);
+              dp.set("page", "1"); dp.set("num", "100");
+              for (const [k, v] of dp.entries()) dirUrl.searchParams.set(k, v);
+              const dr = await pageFetchJson(dirUrl.toString(), { headers: { "Referer": currentUrl || shareUrl } });
+              if (dr && dr.data && !dr.nonJson && Number(dr.data.errno) === 0 && Array.isArray(dr.data.list)) {
+                const dirFiles = dr.data.list.filter(item => Number(item?.isdir || 0) === 0);
+                if (dirFiles.length) { files = dirFiles; break; }
+              }
+            } catch (_) { /* coba kandidat berikutnya */ }
+          }
+        }
+      }
       if (!files.length) throw new Error("Tidak ada file di share");
       // Pastikan timestamp FRESH: server Terabox kadang mengembalikan timestamp
       // basi (~1 jam). Sign terikat EXACT pada nilai timestamp tersebut, jadi
