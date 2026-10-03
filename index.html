@@ -27,9 +27,27 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .fade { animation: fade .2s ease-out; }
     @keyframes fade { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-    .modal-pop { animation: pop .18s ease-out; }
-    @keyframes pop { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+    .modal-pop { animation: pop .22s cubic-bezier(.16,1,.3,1); }
+    @keyframes pop { from { opacity: 0; transform: scale(.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
     #themeKnob { transition: transform .2s ease; }
+    /* Kartu file premium */
+    .file-card { transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease; }
+    .file-card:hover { transform: translateY(-2px); box-shadow: 0 12px 32px -12px rgba(99,102,241,.35); border-color: rgba(99,102,241,.45); }
+    .file-card .play-btn { transition: transform .15s ease, box-shadow .15s ease; }
+    .file-card .play-btn:hover { transform: scale(1.03); box-shadow: 0 8px 20px -6px rgba(99,102,241,.6); }
+    .file-card .play-btn:active { transform: scale(.98); }
+    /* Spinner loading elegan */
+    .loader-ring { width: 56px; height: 56px; border-radius: 9999px;
+      background: conic-gradient(from 0deg, #6366f1, #a855f7, #ec4899, #6366f1);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 6px), #000 calc(100% - 5px));
+      animation: spin 1s linear infinite; }
+    .pulse-dot { animation: pdot 1.4s ease-in-out infinite; }
+    @keyframes pdot { 0%,100% { opacity: .35; } 50% { opacity: 1; } }
+    /* Progress download */
+    .dl-bar { transition: width .25s ease; }
+    /* Modal player */
+    .player-glow { box-shadow: 0 0 0 1px rgba(99,102,241,.25), 0 25px 70px -20px rgba(99,102,241,.45); }
   </style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors">
@@ -52,9 +70,9 @@
             </span>
           </button>
         </div>
-        <div class="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-indigo-600 text-white text-xl mb-3">↓</div>
-        <h1 class="text-2xl font-bold tracking-tight">TerDowngh</h1>
-        <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Terabox Direct Downloader</p>
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-3xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 text-white text-2xl mb-4 shadow-xl shadow-indigo-600/30">↓</div>
+        <h1 class="text-3xl font-bold tracking-tight bg-gradient-to-r from-indigo-600 via-violet-600 to-fuchsia-600 bg-clip-text text-transparent">TerDowngh</h1>
+        <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400">Terabox Direct Downloader & Streaming</p>
       </div>
 
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm p-5 sm:p-6 transition-colors">
@@ -92,20 +110,55 @@
     </section>
   </main>
 
-  <!-- Modal streaming -->
-  <div id="streamModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
-    <div id="streamBackdrop" class="absolute inset-0 bg-black/75"></div>
-    <div class="modal-pop relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-2xl">
-      <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-800">
-        <p id="streamTitle" class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate">Streaming</p>
+  <!-- Custom player modal -->
+  <div id="streamModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6">
+    <div id="streamBackdrop" class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+    <div class="modal-pop player-glow relative w-full max-w-3xl bg-slate-900 rounded-3xl overflow-hidden">
+      <!-- Header -->
+      <div class="flex items-center gap-3 px-4 sm:px-5 py-3.5 bg-gradient-to-r from-indigo-600/20 via-violet-600/10 to-fuchsia-600/20 border-b border-white/10">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-fuchsia-500 flex items-center justify-center shrink-0">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M8 5v14l11-7z"/></svg>
+        </div>
+        <div class="min-w-0 flex-1">
+          <p id="streamTitle" class="text-sm font-semibold text-white truncate">Streaming</p>
+          <p id="streamMode" class="text-[11px] text-indigo-300/80 truncate"></p>
+        </div>
         <button id="streamClose" type="button" aria-label="Tutup"
-          class="shrink-0 w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+          class="shrink-0 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white/80 flex items-center justify-center transition">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
         </button>
       </div>
-      <div id="streamMode" class="text-xs text-slate-500 dark:text-slate-400 px-4 pt-2"></div>
-      <video id="streamVideo" class="w-full max-h-[70vh] bg-black" controls playsinline preload="metadata" referrerpolicy="no-referrer"></video>
-      <p id="streamError" class="hidden px-4 py-3 text-sm text-red-600 dark:text-red-400"></p>
+      <!-- Video area + loading overlay -->
+      <div class="relative bg-black">
+        <video id="streamVideo" class="w-full max-h-[62vh] bg-black" controls playsinline preload="metadata" referrerpolicy="no-referrer"></video>
+        <div id="streamLoading" class="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black/60 backdrop-blur-[2px]">
+          <div class="loader-ring"></div>
+          <p class="text-sm font-medium text-white/90">Memuat stream<span class="pulse-dot">...</span></p>
+          <p id="streamLoadingSub" class="text-[11px] text-white/50">Menyiapkan segmen video</p>
+        </div>
+      </div>
+      <!-- Action bar -->
+      <div class="px-4 sm:px-5 py-4 bg-slate-900">
+        <div id="dlProgressWrap" class="hidden mb-3">
+          <div class="flex justify-between text-[11px] text-white/60 mb-1.5">
+            <span id="dlProgressLabel">Mengunduh...</span>
+            <span id="dlProgressPct">0%</span>
+          </div>
+          <div class="h-1.5 rounded-full bg-white/10 overflow-hidden">
+            <div id="dlProgressBar" class="dl-bar h-full w-0 rounded-full bg-gradient-to-r from-indigo-500 via-violet-500 to-fuchsia-500"></div>
+          </div>
+        </div>
+        <div class="flex gap-2.5">
+          <button id="modalDownloadBtn" type="button"
+            class="flex-1 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-50 disabled:cursor-wait text-white text-sm font-semibold flex items-center justify-center gap-2 transition shadow-lg shadow-indigo-600/30">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/></svg>
+            <span id="modalDownloadLabel">Download Video</span>
+          </button>
+          <button id="modalCloseBtn" type="button"
+            class="h-11 px-5 rounded-xl bg-white/10 hover:bg-white/15 text-white/80 text-sm font-medium transition">Tutup</button>
+        </div>
+        <p id="streamError" class="hidden mt-3 text-sm text-red-400"></p>
+      </div>
     </div>
   </div>
 
@@ -231,13 +284,13 @@
         const kind = fileKind(f.filename);
 
         const card = document.createElement('div');
-        card.className = 'file-card rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-3 transition-colors';
+        card.className = 'file-card rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4';
 
         const top = document.createElement('div');
-        top.className = 'flex gap-3 items-center';
+        top.className = 'flex gap-3.5 items-center';
 
         const thumbWrap = document.createElement('div');
-        thumbWrap.className = 'w-14 h-14 rounded-lg overflow-hidden bg-slate-100 dark:bg-slate-800 shrink-0 flex items-center justify-center';
+        thumbWrap.className = 'w-16 h-16 rounded-xl overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 shrink-0 flex items-center justify-center';
         if (f.thumb) {
           const img = document.createElement('img');
           img.src = f.thumb;
@@ -255,63 +308,41 @@
         const meta = document.createElement('div');
         meta.className = 'min-w-0 flex-1';
         const title = document.createElement('p');
-        title.className = 'text-sm font-medium text-slate-800 dark:text-slate-200 truncate';
+        title.className = 'text-sm font-semibold text-slate-800 dark:text-slate-100 truncate';
         title.textContent = f.filename || 'File tanpa nama';
         title.title = f.filename || '';
         meta.appendChild(title);
+        const sub = document.createElement('div');
+        sub.className = 'flex items-center gap-2 mt-1';
+        const kindBadge = document.createElement('span');
+        kindBadge.className = 'text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ' +
+          (kind === 'video' ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
+            : kind === 'audio' ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300'
+            : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400');
+        kindBadge.textContent = kind === 'video' ? 'Video' : kind === 'audio' ? 'Audio' : kind === 'image' ? 'Gambar' : 'File';
+        sub.appendChild(kindBadge);
         const size = fmtSize(f.size);
         if (size) {
-          const sizeEl = document.createElement('p');
-          sizeEl.className = 'text-xs text-slate-400 dark:text-slate-500 mt-0.5';
+          const sizeEl = document.createElement('span');
+          sizeEl.className = 'text-xs text-slate-400 dark:text-slate-500';
           sizeEl.textContent = size;
-          meta.appendChild(sizeEl);
+          sub.appendChild(sizeEl);
         }
+        meta.appendChild(sub);
         top.appendChild(meta);
-        card.appendChild(top);
-
-        const row = document.createElement('div');
-        row.className = 'flex gap-2 mt-3';
-
-        const input = document.createElement('input');
-        input.readOnly = true;
-        input.value = f.dlink;
-        input.className = 'file-link min-w-0 flex-1 h-10 px-3 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs outline-none';
-        row.appendChild(input);
-
-        const copyBtn = document.createElement('button');
-        copyBtn.type = 'button';
-        copyBtn.className = 'copy-btn px-3 h-10 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-sm font-medium shrink-0 transition-colors';
-        copyBtn.textContent = 'Salin';
-        row.appendChild(copyBtn);
-        card.appendChild(row);
-
-        const actions = document.createElement('div');
-        actions.className = 'flex gap-2 mt-2';
 
         if (kind === 'video' || kind === 'audio') {
           const playBtn = document.createElement('button');
           playBtn.type = 'button';
-          playBtn.className = 'play-btn flex-1 h-10 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center gap-2 text-sm font-semibold transition';
-          playBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg><span>Streaming</span>';
+          playBtn.className = 'play-btn shrink-0 w-12 h-12 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 text-white flex items-center justify-center shadow-lg shadow-indigo-600/30';
+          playBtn.setAttribute('aria-label', 'Putar ' + (f.filename || 'file'));
+          playBtn.title = 'Streaming';
+          playBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
           playBtn.addEventListener('click', () => openStream(f));
-          actions.appendChild(playBtn);
+          top.appendChild(playBtn);
         }
 
-        const dl = document.createElement('button');
-        dl.type = 'button';
-        dl.className = 'flex-1 h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center text-sm font-semibold transition';
-        dl.textContent = 'Download';
-        dl.addEventListener('click', async () => {
-          // Prioritas: download via HLS chunks (lolos 31045)
-          const ok = await downloadViaHls(f, dl);
-          if (!ok) {
-            // Fallback: buka dlink langsung (kemungkinan 31045)
-            window.open(f.dlink, '_blank', 'noopener,noreferrer');
-          }
-        });
-        actions.appendChild(dl);
-
-        card.appendChild(actions);
+        card.appendChild(top);
         fileList.appendChild(card);
       });
     }
@@ -348,15 +379,26 @@
       return cached;
     }
 
-    async function downloadViaHls(file, btn) {
+    async function downloadViaHls(file, ui) {
+      // ui: { label(text), bar(pct), wrap(show/hide), btn(disable) }
       const hlsData = await getHlsForFile(file);
       if (!hlsData || !Array.isArray(hlsData.chunks) || !hlsData.chunks.length) return false;
-      const origLabel = btn.textContent;
+      const setProgress = (i, total, phase) => {
+        if (!ui) return;
+        const pct = total ? Math.round(((i) / total) * 100) : 0;
+        if (ui.wrap) ui.wrap.classList.remove('hidden');
+        if (ui.bar) ui.bar.style.width = pct + '%';
+        if (ui.pct) ui.pct.textContent = pct + '%';
+        const txt = phase === 'merge' ? 'Menggabungkan...' : ('Mengunduh ' + Math.min(i + 1, total) + '/' + total);
+        if (ui.plabel) ui.plabel.textContent = txt;
+        if (ui.label) ui.label.textContent = phase === 'merge' ? 'Menggabungkan...' : 'Mengunduh...';
+      };
       try {
+        if (ui && ui.btn) ui.btn.disabled = true;
         const chunks = hlsData.chunks;
         const parts = [];
         for (let i = 0; i < chunks.length; i++) {
-          btn.textContent = 'Mengunduh ' + (i + 1) + '/' + chunks.length;
+          setProgress(i, chunks.length);
           const enc = btoa(chunks[i].url).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
           const chunkUrl = window.location.origin + "/api/hls-chunk?u=" + enc;
           let buf = null;
@@ -374,7 +416,7 @@
           }
           parts.push(buf);
         }
-        btn.textContent = 'Menggabungkan...';
+        setProgress(chunks.length, chunks.length, 'merge');
         const blob = new Blob(parts, { type: "video/mp2t" });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
@@ -383,23 +425,53 @@
         document.body.appendChild(a);
         a.click();
         setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
-        btn.textContent = origLabel;
+        if (ui) {
+          if (ui.label) ui.label.textContent = 'Download Video';
+          if (ui.wrap) setTimeout(() => ui.wrap.classList.add('hidden'), 1500);
+          if (ui.bar) setTimeout(() => { ui.bar.style.width = '0%'; }, 1500);
+          if (ui.pct) ui.pct.textContent = '0%';
+          if (ui.btn) ui.btn.disabled = false;
+        }
         return true;
       } catch (e) {
-        btn.textContent = origLabel;
+        if (ui) {
+          if (ui.label) ui.label.textContent = 'Download Video';
+          if (ui.btn) ui.btn.disabled = false;
+        }
         return false;
       }
     }
 
-    // ---------- Modal streaming ----------
+    // ---------- Custom player modal ----------
     const streamModal = document.getElementById('streamModal');
     const streamTitle = document.getElementById('streamTitle');
     const streamVideo = document.getElementById('streamVideo');
     const streamError = document.getElementById('streamError');
+    const streamLoading = document.getElementById('streamLoading');
+    const streamLoadingSub = document.getElementById('streamLoadingSub');
+    const modalDownloadBtn = document.getElementById('modalDownloadBtn');
+    const modalDownloadLabel = document.getElementById('modalDownloadLabel');
+    const dlProgressWrap = document.getElementById('dlProgressWrap');
+    const dlProgressBar = document.getElementById('dlProgressBar');
+    const dlProgressLabel = document.getElementById('dlProgressLabel');
+    const dlProgressPct = document.getElementById('dlProgressPct');
 
     let streamFile = null;
     let streamRetried = false;
     let hlsInstance = null;
+
+    function showStreamLoading(sub) {
+      if (streamLoadingSub && sub) streamLoadingSub.textContent = sub;
+      streamLoading.classList.remove('hidden');
+    }
+    function hideStreamLoading() {
+      streamLoading.classList.add('hidden');
+    }
+    // Sembunyikan overlay loading begitu video benar-benar berputar
+    streamVideo.addEventListener('playing', hideStreamLoading);
+    streamVideo.addEventListener('waiting', () => {
+      if (!streamModal.classList.contains('hidden')) showStreamLoading('Buffering...');
+    });
 
     // Bangun playlist M3U8 dari data chunks backend, dengan URL chunk
     // yang di-proxy via /api/hls-chunk (agar cookie NDUS terpasang server-side).
@@ -428,8 +500,15 @@
       streamError.textContent = '';
       streamModal.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
+      // Reset UI download modal
+      dlProgressWrap.classList.add('hidden');
+      dlProgressBar.style.width = '0%';
+      dlProgressPct.textContent = '0%';
+      modalDownloadLabel.textContent = 'Download Video';
+      modalDownloadBtn.disabled = false;
+      showStreamLoading('Menyiapkan segmen video');
       const modeEl = document.getElementById('streamMode');
-      if (modeEl) modeEl.textContent = 'Memuat stream...';
+      if (modeEl) modeEl.textContent = 'Menyiapkan stream...';
       // Prioritas 1: HLS via /share/streaming (jalur resmi, lolos 31045)
       // Ambil HLS khusus untuk file ini (bukan cache file pertama).
       const hlsData = await getHlsForFile(file);
@@ -477,16 +556,36 @@
       try { if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } } catch (_) {}
       streamVideo.removeAttribute('src');
       streamVideo.load();
+      hideStreamLoading();
       streamModal.classList.add('hidden');
       document.body.style.overflow = '';
     }
 
     document.getElementById('streamClose').addEventListener('click', closeStream);
+    document.getElementById('modalCloseBtn').addEventListener('click', closeStream);
     document.getElementById('streamBackdrop').addEventListener('click', closeStream);
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !streamModal.classList.contains('hidden')) closeStream();
     });
+    // Tombol download di dalam player modal (dengan progress bar)
+    modalDownloadBtn.addEventListener('click', async () => {
+      if (!streamFile) return;
+      const ok = await downloadViaHls(streamFile, {
+        btn: modalDownloadBtn,
+        label: modalDownloadLabel,
+        plabel: dlProgressLabel,
+        wrap: dlProgressWrap,
+        bar: dlProgressBar,
+        pct: dlProgressPct,
+      });
+      if (!ok) {
+        streamError.textContent = 'Download gagal. Coba lagi sesaat.';
+        streamError.classList.remove('hidden');
+      }
+    });
+
     streamVideo.addEventListener('error', () => {
+      hideStreamLoading();
       // Fallback: coba sekali lagi dengan Referer normal, siapa tahu
       // CDN-nya justru membutuhkan Referer.
       if (streamFile && !streamRetried) {
