@@ -176,7 +176,10 @@ class Handler(BaseHTTPRequestHandler):
             fid = req.get("fid")
             if fid is not None:
                 fid = str(fid).strip() or None
-            result = asyncio.run(get_terabox_dlink(url.strip(), fid=fid))
+            path = req.get("path")
+            if path is not None:
+                path = str(path).strip() or None
+            result = asyncio.run(get_terabox_dlink(url.strip(), fid=fid, path=path))
         except Exception as exc:
             self._json({"error": f"failed: {exc}"}, 500)
             return
