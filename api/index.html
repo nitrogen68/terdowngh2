@@ -23,6 +23,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { font-family: Inter, system-ui, sans-serif; }
+    /* Auto-enhance video player: tajam + kontras (built-in, selalu aktif) */
+    #streamVideo { filter: contrast(1.08) saturate(1.08) brightness(1.01); }
     .spin { animation: spin 1s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .fade { animation: fade .2s ease-out; }
