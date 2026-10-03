@@ -90,7 +90,12 @@ def _extract_files(value):
             name = obj.get("server_filename") or obj.get("file_name") or obj.get("filename") or obj.get("name") or obj.get("title")
             dlink = obj.get("dlink") or obj.get("download_url") or obj.get("original_download_url") or obj.get("direct_link")
             size = obj.get("size") or obj.get("formatted_size")
-            if name and isinstance(dlink, str) and dlink.startswith("http"):
+            isdir = obj.get("isdir")
+            try:
+                isdir = int(isdir) if isdir is not None else 0
+            except (ValueError, TypeError):
+                isdir = 0
+            if name and (isdir == 1 or (isinstance(dlink, str) and dlink.startswith("http"))):
                 thumb = obj.get("thumb")
                 if not isinstance(thumb, str):
                     th = obj.get("thumbs")
@@ -99,22 +104,25 @@ def _extract_files(value):
                         thumb = cand if isinstance(cand, str) else None
                 ld = obj.get("downloadDlink") or obj.get("listDlink")
                 fs_id = obj.get("fs_id") or obj.get("fsId") or obj.get("fid")
-                files.append({"filename": name, "size": size, "dlink": dlink,
+                path = obj.get("path")
+                files.append({"filename": name, "size": size, "dlink": dlink if isinstance(dlink, str) else None,
                               "thumb": thumb if isinstance(thumb, str) else None,
                               "list_dlink": ld if isinstance(ld, str) else None,
-                              "fs_id": str(fs_id) if fs_id else None})
+                              "fs_id": str(fs_id) if fs_id else None,
+                              "isdir": isdir,
+                              "path": path if isinstance(path, str) else None})
             for v in obj.values():
                 walk(v)
         elif isinstance(obj, list):
             for item in obj:
                 walk(item)
     walk(value)
-    # Dedup berdasarkan dlink, tapi MERGE metadata dari semua kemunculan —
+    # Dedup berdasarkan dlink (atau path untuk folder), tapi MERGE metadata —
     # pilih nilai terlengkap (nama terpanjang, ada size/thumb/fs_id).
     merged = {}
     order = []
     for f in files:
-        dl = f["dlink"]
+        dl = f["dlink"] or ("__dir__" + str(f.get("path") or f.get("filename")))
         if dl not in merged:
             merged[dl] = dict(f)
             order.append(dl)
@@ -123,7 +131,7 @@ def _extract_files(value):
             # filename: pilih yang terpanjang (lebih lengkap)
             if f.get("filename") and len(str(f["filename"])) > len(str(cur.get("filename") or "")):
                 cur["filename"] = f["filename"]
-            for k in ("size", "thumb", "list_dlink", "fs_id"):
+            for k in ("size", "thumb", "list_dlink", "fs_id", "path"):
                 if not cur.get(k) and f.get(k):
                     cur[k] = f[k]
     return [merged[dl] for dl in order]
@@ -173,7 +181,7 @@ def _clean_browserless_error(msg):
     return msg.strip() or "browserless gagal tanpa pesan"
 
 
-async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
+async def get_terabox_dlink(share_url: str, fid: str = None, path: str = None) -> dict:
     client = BrowserlessClient()
     ndus = (os.environ.get("TERABOX_NDUS") or "").strip()
     if ndus.lower().startswith("ndus="):
@@ -183,6 +191,7 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
     code = r'''export default async ({ page }) => {
       const shareUrl = __SHARE_URL__;
       const injectedNdus = __NDUS__;
+      const targetPath = __PATH__;
       const captured = { jsToken: null, shorturlinfo: null, shareList: null, downloadResponses: [], resourceUrls: [] };
       const pickThumb = (f) => {
         try {
@@ -331,7 +340,9 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
       }
       if ((!info || Number(info?.errno) !== 0) && captured.jsToken && surl) {
         const listUrl = new URL("/share/list", origin);
-        const params = commonParams(); params.set("shorturl", surl); params.set("root", "1"); params.set("page", "1"); params.set("num", "100");
+        const params = commonParams(); params.set("shorturl", surl);
+        if (targetPath) { params.set("dir", targetPath); } else { params.set("root", "1"); }
+        params.set("page", "1"); params.set("num", "100");
         for (const [k, v] of params.entries()) listUrl.searchParams.set(k, v);
         const res = await pageFetchJson(listUrl.toString(), { headers: { "Referer": currentUrl || shareUrl } });
         if (res && res.data && !res.nonJson && Number(res.data.errno) === 0 && Array.isArray(res.data.list)) {
@@ -339,38 +350,26 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
           info = { errno: 0, list: listData.list, shareid: listData.share_id || listData.shareid, uk: listData.uk, sign: listData.sign, timestamp: listData.timestamp, randsk: listData.randsk };
         }
       }
+      // Jika path folder diminta tapi info dari shorturlinfo adalah root: list folder tersebut
+      if (targetPath && captured.jsToken && surl) {
+        try {
+          const dirUrl = new URL("/share/list", origin);
+          const dp = commonParams(); dp.set("shorturl", surl); dp.set("dir", targetPath); dp.set("page", "1"); dp.set("num", "100");
+          for (const [k, v] of dp.entries()) dirUrl.searchParams.set(k, v);
+          const dr = await pageFetchJson(dirUrl.toString(), { headers: { "Referer": currentUrl || shareUrl } });
+          if (dr && dr.data && !dr.nonJson && Number(dr.data.errno) === 0 && Array.isArray(dr.data.list)) {
+            info = { errno: 0, list: dr.data.list, shareid: info?.shareid, uk: info?.uk, sign: info?.sign, timestamp: dr.data.timestamp || info?.timestamp, randsk: info?.randsk };
+          }
+        } catch (_) { /* pakai info yang ada */ }
+      }
       if (!captured.jsToken) throw new Error("jsToken Terabox tidak ditemukan");
       if (!surl) throw new Error("Kode share (surl) tidak ditemukan");
       if (!info || Number(info.errno) !== 0) throw new Error("Terabox metadata gagal (errno " + (info?.errno ?? "?") + "): " + (info?.show_msg || info?.errmsg || "unknown"));
       const fileList = Array.isArray(info.list) ? info.list : [];
-      let files = fileList.filter(item => Number(item?.isdir || 0) === 0);
-      // Jika share hanya berisi folder: coba list isi folder pertama
-      if (!files.length && fileList.length) {
-        const dir = fileList.find(item => Number(item?.isdir || 0) === 1);
-        if (dir && (dir.fs_id || dir.path)) {
-          // Coba beberapa varian parameter dir (path dan fs_id)
-          const dirCandidates = [];
-          if (dir.path) dirCandidates.push(String(dir.path));
-          if (dir.server_filename) dirCandidates.push("/" + String(dir.server_filename));
-          if (dir.fs_id) dirCandidates.push(String(dir.fs_id));
-          for (const dirVal of dirCandidates) {
-            try {
-              const dirUrl = new URL("/share/list", origin);
-              const dp = commonParams();
-              dp.set("shorturl", surl);
-              dp.set("dir", dirVal);
-              dp.set("page", "1"); dp.set("num", "100");
-              for (const [k, v] of dp.entries()) dirUrl.searchParams.set(k, v);
-              const dr = await pageFetchJson(dirUrl.toString(), { headers: { "Referer": currentUrl || shareUrl } });
-              if (dr && dr.data && !dr.nonJson && Number(dr.data.errno) === 0 && Array.isArray(dr.data.list)) {
-                const dirFiles = dr.data.list.filter(item => Number(item?.isdir || 0) === 0);
-                if (dirFiles.length) { files = dirFiles; break; }
-              }
-            } catch (_) { /* coba kandidat berikutnya */ }
-          }
-        }
-      }
-      if (!files.length) throw new Error("Tidak ada file di share (mungkin hanya berisi folder kosong)");
+      // Kembalikan semua item (file + folder). Folder ditandai isdir=1 agar
+      // frontend bisa tampilkan ikon folder dan navigasi masuk.
+      let files = fileList.slice();
+      if (!files.length) throw new Error("Tidak ada file di share");
       // Pastikan timestamp FRESH: server Terabox kadang mengembalikan timestamp
       // basi (~1 jam). Sign terikat EXACT pada nilai timestamp tersebut, jadi
       // ulangi fetch hingga dapat yang fresh, lalu pakai nilai persis itu.
@@ -555,7 +554,8 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
       return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, hls: hlsInfo }, type: "application/json" };
     };'''
     safe_fid = json.dumps(str(fid) if fid else "")
-    code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus).replace("__FID__", safe_fid)
+    safe_path = json.dumps(str(path) if path else "")
+    code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus).replace("__FID__", safe_fid).replace("__PATH__", safe_path)
     try:
         result = client._post_function(code, timeout_ms=120000)
     except Exception as exc:
