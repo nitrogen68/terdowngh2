@@ -329,9 +329,21 @@
         for (let i = 0; i < chunks.length; i++) {
           btn.textContent = 'Mengunduh ' + (i + 1) + '/' + chunks.length;
           const enc = btoa(chunks[i].url).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-          const resp = await fetch(window.location.origin + "/api/hls-chunk?u=" + enc);
-          if (!resp.ok) throw new Error('chunk ' + i + ' gagal: ' + resp.status);
-          parts.push(await resp.arrayBuffer());
+          const chunkUrl = window.location.origin + "/api/hls-chunk?u=" + enc;
+          let buf = null;
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              const resp = await fetch(chunkUrl);
+              if (!resp.ok) throw new Error('HTTP ' + resp.status);
+              buf = await resp.arrayBuffer();
+              if (buf.byteLength > 0) break;
+              throw new Error('chunk kosong');
+            } catch (e) {
+              if (attempt === 2) throw new Error('chunk ' + i + ' gagal setelah 3x: ' + e.message);
+              await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            }
+          }
+          parts.push(buf);
         }
         btn.textContent = 'Menggabungkan...';
         const blob = new Blob(parts, { type: "video/mp2t" });
