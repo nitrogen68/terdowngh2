@@ -507,9 +507,9 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
           let hlsErr = null;
           let hlsType = null;
           let noNew = 0;
-          for (const st of ["M3U8_FLV_264_480", "M3U8_AUTO_360"]) {
+          for (const st of ["M3U8_AUTO_360", "M3U8_FLV_264_480"]) {
             noNew = 0;
-            for (let att = 0; att < 40 && noNew < 8; att++) {
+            for (let att = 0; att < 10 && noNew < 3; att++) {
               const su = new URL("/share/streaming", origin);
               const sp = commonParams();
               sp.set("uk", String(uk)); sp.set("shareid", String(shareId));
@@ -521,7 +521,7 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
                 try {
                   const resp = await fetch(u, { credentials: "include", headers: { "Accept": "*/*", "Referer": refUrl, "X-Requested-With": "XMLHttpRequest" } });
                   const txt = await resp.text();
-                  return { status: resp.status, text: txt.slice(0, 20000) };
+                  return { status: resp.status, text: txt.slice(0, 1000000) };
                 } catch (e) { return { error: String(e).slice(0, 100) }; }
               }, su.toString(), currentUrl || shareUrl);
               let added = 0;
