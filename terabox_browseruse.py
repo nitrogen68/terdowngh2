@@ -159,7 +159,7 @@ def _clean_browserless_error(msg):
     return msg.strip() or "browserless gagal tanpa pesan"
 
 
-async def get_terabox_dlink(share_url: str) -> dict:
+async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
     client = BrowserlessClient()
     ndus = (os.environ.get("TERABOX_NDUS") or "").strip()
     if ndus.lower().startswith("ndus="):
@@ -494,18 +494,22 @@ async def get_terabox_dlink(share_url: str) -> dict:
         }
       } catch (e) { dlinkProbeClean = { error: String(e && e.message || e).slice(0, 100) }; }
       debugLog.push({ step: "dlink_probe_clean", probe: dlinkProbeClean });
-      // === HLS probe: /share/streaming adalah jalur RESMI klien untuk video.
-      // Kumpulkan chunk URLs (tiap request memberi subset acak) + tes 1 chunk.
+      // === HLS full: /share/streaming adalah jalur RESMI klien untuk video.
+      // Kumpulkan SEMUA chunks (tiap request memberi subset acak) dengan
+      // sequence number yang benar dari #EXT-X-MEDIA-SEQUENCE + #EXTINF.
       let hlsInfo = null;
       try {
-        const vfile = files.find(f => /\.(mp4|mkv|avi|mov|webm|m4v)$/i.test(String(f.server_filename || f.filename || ""))) || files[0];
+        const targetFid = "__FID__";
+        const vfile = (targetFid && files.find(f => String(f.fs_id) === String(targetFid)))
+          || files.find(f => /\.(mp4|mkv|avi|mov|webm|m4v)$/i.test(String(f.server_filename || f.filename || ""))) || files[0];
         if (vfile && vfile.fs_id && uk && shareId && sign && timestamp) {
-          const seen = new Set();
-          const chunkUrls = [];
+          const chunkMap = new Map();
           let hlsErr = null;
           let hlsType = null;
+          let noNew = 0;
           for (const st of ["M3U8_AUTO_360", "M3U8_FLV_264_480"]) {
-            for (let att = 0; att < 5 && chunkUrls.length < 15; att++) {
+            noNew = 0;
+            for (let att = 0; att < 15 && noNew < 3; att++) {
               const su = new URL("/share/streaming", origin);
               const sp = commonParams();
               sp.set("uk", String(uk)); sp.set("shareid", String(shareId));
@@ -517,47 +521,49 @@ async def get_terabox_dlink(share_url: str) -> dict:
                 try {
                   const resp = await fetch(u, { credentials: "include", headers: { "Accept": "*/*", "Referer": refUrl, "X-Requested-With": "XMLHttpRequest" } });
                   const txt = await resp.text();
-                  return { status: resp.status, head: txt.slice(0, 4000) };
+                  return { status: resp.status, text: txt.slice(0, 20000) };
                 } catch (e) { return { error: String(e).slice(0, 100) }; }
               }, su.toString(), currentUrl || shareUrl);
-              if (sr && sr.head && sr.head.includes("#EXTM3U")) {
+              let added = 0;
+              if (sr && sr.text && sr.text.includes("#EXTM3U")) {
                 hlsType = st;
-                for (const line of sr.head.split("\n")) {
+                const mseqM = sr.text.match(/#EXT-X-MEDIA-SEQUENCE:(\d+)/);
+                const baseSeq = mseqM ? parseInt(mseqM[1], 10) : 0;
+                let dur = 10;
+                let idx = 0;
+                for (const line of sr.text.split("\n")) {
                   const t = line.trim();
-                  if (t && !t.startsWith("#") && t.length > 10) {
+                  if (t.startsWith("#EXTINF:")) {
+                    const dm = t.match(/#EXTINF:([\d.]+)/);
+                    if (dm) dur = parseFloat(dm[1]);
+                  } else if (t && !t.startsWith("#") && t.length > 10) {
+                    const seq = baseSeq + idx;
                     const full = t.startsWith("http") ? t : (new URL(t, su.origin).toString());
-                    if (!seen.has(full)) { seen.add(full); chunkUrls.push(full); }
+                    if (!chunkMap.has(seq)) { chunkMap.set(seq, { dur, url: full }); added++; }
+                    idx++;
                   }
                 }
-              } else if (sr && sr.head) {
-                try { const j = JSON.parse(sr.head); hlsErr = "errno " + j.errno; } catch (_) { hlsErr = "non-m3u8 status " + sr.status; }
+              } else if (sr && sr.text) {
+                try { const j = JSON.parse(sr.text); hlsErr = "errno " + j.errno; } catch (_) { hlsErr = "non-m3u8 status " + sr.status; }
               } else if (sr && sr.error) {
                 hlsErr = sr.error;
               }
+              noNew = (added === 0) ? noNew + 1 : 0;
+              await new Promise(r => setTimeout(r, 250));
             }
-            if (chunkUrls.length > 0) break;
+            if (chunkMap.size > 0) break;
           }
-          let chunkProbe = null;
-          if (chunkUrls.length > 0) {
-            const cu = chunkUrls[0];
-            chunkProbe = await page.evaluate(async (u, refUrl) => {
-              try {
-                const resp = await fetch(u, { credentials: "include", headers: { "Range": "bytes=0-1023", "Referer": refUrl } });
-                const buf = await resp.arrayBuffer();
-                const bytes = new Uint8Array(buf.slice(0, 4));
-                return { status: resp.status, bytes: buf.byteLength, ct: resp.headers.get("content-type"), magic: Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("") };
-              } catch (e) { return { error: String(e).slice(0, 100) }; }
-            }, cu, currentUrl || shareUrl);
-          }
-          hlsInfo = { type: hlsType, chunks: chunkUrls.length, sampleChunk: chunkUrls[0] ? chunkUrls[0].slice(0, 90) : null, chunkProbe, error: hlsErr, fid: String(vfile.fs_id) };
+          const sorted = [...chunkMap.entries()].sort((a, b) => a[0] - b[0]).map(([seq, v]) => ({ seq, dur: v.dur, url: v.url }));
+          hlsInfo = { type: hlsType, total: sorted.length, chunks: sorted, error: hlsErr, fid: String(vfile.fs_id), filename: vfile.server_filename || vfile.filename || "file" };
         }
       } catch (e) { hlsInfo = { error: String(e && e.message || e).slice(0, 100) }; }
-      debugLog.push({ step: "hls", info: hlsInfo });
+      debugLog.push({ step: "hls", total: hlsInfo && hlsInfo.total, error: hlsInfo && hlsInfo.error });
       return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, ndusCookieOk: !!captured.ndusCookieOk, dlinkProbe, dlinkProbeClean, hls: hlsInfo }, type: "application/json" };
     };'''
-    code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus)
+    safe_fid = json.dumps(str(fid) if fid else "")
+    code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus).replace("__FID__", safe_fid)
     try:
-        result = client._post_function(code, timeout_ms=50000)
+        result = client._post_function(code, timeout_ms=120000)
     except Exception as exc:
         fb = _try_public_fallbacks(share_url)
         if fb and fb.get("success"):
