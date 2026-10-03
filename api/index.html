@@ -331,7 +331,7 @@
       for (const c of chunks) {
         const enc = btoa(c.url).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
         m3u8 += "#EXTINF:" + (c.dur || 10) + ",\n";
-        m3u8 += "/api/hls-chunk?u=" + enc + "\n";
+        m3u8 += window.location.origin + "/api/hls-chunk?u=" + enc + "\n";
       }
       m3u8 += "#EXT-X-ENDLIST\n";
       const blob = new Blob([m3u8], { type: "application/vnd.apple.mpegurl" });
