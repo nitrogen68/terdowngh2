@@ -297,17 +297,57 @@
           actions.appendChild(playBtn);
         }
 
-        const dl = document.createElement('a');
-        dl.href = f.dlink;
-        dl.target = '_blank';
-        dl.rel = 'noopener noreferrer';
+        const dl = document.createElement('button');
+        dl.type = 'button';
         dl.className = 'flex-1 h-10 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center text-sm font-semibold transition';
         dl.textContent = 'Download';
+        dl.addEventListener('click', async () => {
+          // Prioritas: download via HLS chunks (lolos 31045)
+          const ok = await downloadViaHls(f, dl);
+          if (!ok) {
+            // Fallback: buka dlink langsung (kemungkinan 31045)
+            window.open(f.dlink, '_blank', 'noopener,noreferrer');
+          }
+        });
         actions.appendChild(dl);
 
         card.appendChild(actions);
         fileList.appendChild(card);
       });
+    }
+
+
+    // Download via HLS chunks (lolos 31045): ambil semua segmen via proxy,
+    // gabung jadi satu file .ts yang bisa diputar.
+    async function downloadViaHls(file, btn) {
+      const hlsData = window._hlsData;
+      if (!hlsData || !Array.isArray(hlsData.chunks) || !hlsData.chunks.length) return false;
+      const origLabel = btn.textContent;
+      try {
+        const chunks = hlsData.chunks;
+        const parts = [];
+        for (let i = 0; i < chunks.length; i++) {
+          btn.textContent = 'Mengunduh ' + (i + 1) + '/' + chunks.length;
+          const enc = btoa(chunks[i].url).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+          const resp = await fetch(window.location.origin + "/api/hls-chunk?u=" + enc);
+          if (!resp.ok) throw new Error('chunk ' + i + ' gagal: ' + resp.status);
+          parts.push(await resp.arrayBuffer());
+        }
+        btn.textContent = 'Menggabungkan...';
+        const blob = new Blob(parts, { type: "video/mp2t" });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        const base = (file.filename || 'video').replace(/\.[a-z0-9]+$/i, '');
+        a.download = base + '.ts';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 5000);
+        btn.textContent = origLabel;
+        return true;
+      } catch (e) {
+        btn.textContent = origLabel;
+        return false;
+      }
     }
 
     // ---------- Modal streaming ----------
