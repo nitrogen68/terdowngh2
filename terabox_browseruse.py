@@ -507,7 +507,7 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
           let hlsErr = null;
           let hlsType = null;
           let noNew = 0;
-          for (const st of ["M3U8_AUTO_360", "M3U8_FLV_264_480"]) {
+          for (const st of ["M3U8_FLV_264_480", "M3U8_AUTO_360"]) {
             noNew = 0;
             for (let att = 0; att < 40 && noNew < 8; att++) {
               const su = new URL("/share/streaming", origin);
