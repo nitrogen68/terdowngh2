@@ -703,16 +703,17 @@
         });
 
         const data = await response.json().catch(() => ({}));
-        if (!response.ok || !data.ok || !data.dlink) {
+        const _filesRaw = (Array.isArray(data.files) && data.files.length
+          ? data.files
+          : [{ filename: data.filename, size: null, dlink: data.dlink, thumb: data.thumb || null }]
+        );
+        if (!response.ok || !data.ok || !_filesRaw.length) {
           throw new Error(data.error || 'Gagal mendapatkan link download.');
         }
         // Simpan data HLS untuk streaming via hls.js
         window._hlsData = data.hls || null;
 
-        const files = (Array.isArray(data.files) && data.files.length
-          ? data.files
-          : [{ filename: data.filename, size: null, dlink: data.dlink, thumb: data.thumb || null }]
-        ).filter((f) => f && f.dlink);
+        const files = _filesRaw.filter((f) => f && (f.dlink || Number(f.isdir || 0) === 1));
         if (!files.length) {
           throw new Error('Tidak ada link download yang berhasil diekstrak.');
         }
