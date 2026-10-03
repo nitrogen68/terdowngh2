@@ -18,6 +18,32 @@ MESSENGER_VERIFY_TOKEN = "TsVrf_jjEAyMqaUK7BxsWb1Wl5S9mEFtjFrrzw"
 
 FB_GRAPH_URL = "https://graph.facebook.com/v18.0/me/messages"
 
+# Diagnostik: catat hit webhook masuk (metadata saja, tanpa isi pesan/token).
+# In-memory: hilang saat cold start, tapi cukup untuk verifikasi real-time.
+_webhook_hits = []
+
+
+def _record_webhook_hit(body):
+    try:
+        import time
+        info = {"ts": int(time.time())}
+        if isinstance(body, dict):
+            info["object"] = body.get("object")
+            entries = body.get("entry") or []
+            info["entries"] = len(entries)
+            n_msg = 0
+            for e in entries:
+                for ev in (e.get("messaging") or []):
+                    if isinstance(ev, dict) and ev.get("message"):
+                        n_msg += 1
+            info["messages"] = n_msg
+        else:
+            info["object"] = None
+        _webhook_hits.append(info)
+        del _webhook_hits[:-20]
+    except Exception:
+        pass
+
 
 def _send_messenger(psid, text):
     """Kirim pesan teks via Messenger Send API. Token dari env MESSENGER_PAGE_TOKEN."""
@@ -150,6 +176,13 @@ class Handler(BaseHTTPRequestHandler):
                 ndus = ndus.split("=", 1)[1].strip()
             self._json({"has_ndus": bool(ndus)})
             return
+        if path == "/api/webhook-debug":
+            # Diagnostik webhook Messenger: hit masuk terakhir + status token (tanpa nilai).
+            self._json({
+                "hits": _webhook_hits[-20:],
+                "has_page_token": bool((os.environ.get("MESSENGER_PAGE_TOKEN") or "").strip()),
+            })
+            return
         if path == "/api/hls-chunk":
             self._proxy_hls_chunk()
             return
@@ -260,6 +293,7 @@ class Handler(BaseHTTPRequestHandler):
                 body = json.loads(self.rfile.read(length)) if length else {}
             except Exception:
                 body = {}
+            _record_webhook_hit(body)
             self._json({"status": "EVENT_RECEIVED"})
             try:
                 _handle_messenger_event(body)
