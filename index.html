@@ -226,24 +226,34 @@
       }, 1000);
     }
 
-    function showError(message, detail) {
+    function showDiagnostic(info) {
       stopLoadingTimer();
-      errorBox.innerHTML = '';
-      const main = document.createElement('div');
-      main.textContent = message;
-      errorBox.appendChild(main);
-      if (detail) {
-        const det = document.createElement('div');
-        det.className = 'mt-2 text-xs opacity-80 break-words font-mono';
-        det.textContent = 'Detail: ' + detail;
-        errorBox.appendChild(det);
-      }
-      errorBox.classList.remove('hidden');
       loading.classList.add('hidden');
       result.classList.add('hidden');
       submitBtn.disabled = false;
       btnLabel.textContent = 'Dapatkan Link';
+      // info: {title, status, statusText, contentType, elapsedMs, rawBody, parsedJson, note}
+      let s = '═══ ' + (info.title || 'DIAGNOSTIC') + ' ═══\n';
+      s += 'HTTP Status: ' + (info.status !== undefined ? info.status : '?') + '\n';
+      s += 'Status Text: ' + (info.statusText || '-') + '\n';
+      s += 'Content-Type: ' + (info.contentType || '-') + '\n';
+      s += 'Elapsed: ' + (info.elapsedMs !== undefined ? (info.elapsedMs/1000).toFixed(2) + 's' : '?') + '\n';
+      if (info.note) s += 'Note: ' + info.note + '\n';
+      s += '\n--- Response Body ---\n';
+      if (info.parsedJson !== undefined && info.parsedJson !== null) {
+        try { s += JSON.stringify(info.parsedJson, null, 2); }
+        catch(e) { s += String(info.rawBody).slice(0, 3000); }
+      } else {
+        s += String(info.rawBody || '(empty)').slice(0, 3000);
+      }
+      errorBox.innerHTML = '';
+      const pre = document.createElement('pre');
+      pre.style.cssText = 'text-align:left;white-space:pre-wrap;word-break:break-word;font-size:11px;max-height:400px;overflow:auto;background:#1a1a2e;color:#eee;padding:12px;border-radius:8px;margin:0;';
+      pre.textContent = s;
+      errorBox.appendChild(pre);
+      errorBox.classList.remove('hidden');
     }
+    function showError(message) { showDiagnostic({title:'ERROR', note:message, rawBody:message}); }
 
     function setLoading(active) {
       submitBtn.disabled = active;
@@ -280,8 +290,7 @@
         `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${paths}</svg>`;
       const wrap = document.createElement('span');
       wrap.className = 'text-slate-400 dark:text-slate-500';
-      if (kind === 'folder') { wrap.className = 'text-amber-500 dark:text-amber-400'; wrap.innerHTML = svg('<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/>'); }
-      else if (kind === 'video') wrap.innerHTML = svg('<rect x="2" y="4" width="20" height="16" rx="3"/><path d="m10 9 5 3-5 3z"/>');
+      if (kind === 'video') wrap.innerHTML = svg('<rect x="2" y="4" width="20" height="16" rx="3"/><path d="m10 9 5 3-5 3z"/>');
       else if (kind === 'audio') wrap.innerHTML = svg('<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>');
       else if (kind === 'image') wrap.innerHTML = svg('<rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>');
       else wrap.innerHTML = svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>');
@@ -291,15 +300,10 @@
     function renderFiles(files) {
       fileList.innerHTML = '';
       files.forEach((f) => {
-        const isFolder = Number(f.isdir || 0) === 1;
-        const kind = isFolder ? 'folder' : fileKind(f.filename);
+        const kind = fileKind(f.filename);
 
         const card = document.createElement('div');
-        card.className = 'file-card rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4' + (isFolder ? ' cursor-pointer' : '');
-        if (isFolder) {
-          card.addEventListener('click', () => openFolder(f));
-          card.title = 'Buka folder';
-        }
+        card.className = 'file-card rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4';
 
         const top = document.createElement('div');
         top.className = 'flex gap-3.5 items-center';
@@ -331,11 +335,10 @@
         sub.className = 'flex items-center gap-2 mt-1';
         const kindBadge = document.createElement('span');
         kindBadge.className = 'text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full ' +
-          (kind === 'folder' ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300'
-            : kind === 'video' ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
+          (kind === 'video' ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
             : kind === 'audio' ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300'
             : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400');
-        kindBadge.textContent = kind === 'folder' ? 'Folder' : kind === 'video' ? 'Video' : kind === 'audio' ? 'Audio' : kind === 'image' ? 'Gambar' : 'File';
+        kindBadge.textContent = kind === 'video' ? 'Video' : kind === 'audio' ? 'Audio' : kind === 'image' ? 'Gambar' : 'File';
         sub.appendChild(kindBadge);
         const size = fmtSize(f.size);
         if (size) {
@@ -368,70 +371,6 @@
     // gabung jadi satu file .ts yang bisa diputar.
     // URL share disimpan untuk fetch HLS per-file bila diperlukan.
     let currentShareUrl = '';
-    let currentPath = ''; // path folder saat ini, '' = root
-    let pathHistory = []; // untuk tombol kembali
-
-    // Buka folder: fetch isi folder via backend dengan param path.
-    async function openFolder(folder) {
-      const folderPath = folder.path || ('/' + (folder.filename || ''));
-      pathHistory.push(currentPath);
-      currentPath = folderPath;
-      await fetchFiles(currentShareUrl, folderPath);
-      renderBreadcrumb();
-    }
-
-    // Kembali ke folder sebelumnya.
-    async function goBack() {
-      if (!pathHistory.length) return;
-      currentPath = pathHistory.pop();
-      await fetchFiles(currentShareUrl, currentPath);
-      renderBreadcrumb();
-    }
-
-    // Tampilkan breadcrumb navigasi folder.
-    function renderBreadcrumb() {
-      let bc = document.getElementById('breadcrumb');
-      if (!bc) {
-        bc = document.createElement('div');
-        bc.id = 'breadcrumb';
-        bc.className = 'flex items-center gap-2 mb-3 text-sm';
-        fileList.parentNode.insertBefore(bc, fileList);
-      }
-      bc.innerHTML = '';
-      if (!currentPath && !pathHistory.length) { bc.style.display = 'none'; return; }
-      bc.style.display = 'flex';
-      const backBtn = document.createElement('button');
-      backBtn.type = 'button';
-      backBtn.className = 'px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-700';
-      backBtn.textContent = '← Kembali';
-      backBtn.addEventListener('click', goBack);
-      bc.appendChild(backBtn);
-      const label = document.createElement('span');
-      label.className = 'text-slate-500 dark:text-slate-400 text-xs truncate';
-      label.textContent = currentPath || '/';
-      bc.appendChild(label);
-    }
-
-    // Fetch daftar file (root atau folder tertentu).
-    async function fetchFiles(shareUrl, path) {
-      fileList.innerHTML = '<div class="text-center py-8 text-slate-400">Memuat...</div>';
-      try {
-        const body = { url: shareUrl };
-        if (path) body.path = path;
-        const res = await fetch('/api/terabox/direct', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error);
-        const files = data.files || [];
-        window._hlsData = data.hls || null;
-        renderFiles(files);
-      } catch (e) {
-        fileList.innerHTML = '<div class="text-center py-8 text-red-400 text-sm">Gagal: ' + (e.message || e) + '</div>';
-      }
-    }
 
     // Ambil data HLS untuk file tertentu. Pakai cache bila fid cocok,
     // jika tidak fetch ke backend dengan fid file tersebut.
@@ -700,9 +639,9 @@
 
       setLoading(true);
       currentShareUrl = url;
-      currentPath = '';
-      pathHistory = [];
 
+      const reqStart = Date.now();
+      let diag = { status: undefined, statusText: '', contentType: '', rawBody: '', parsedJson: null };
       try {
         const response = await fetch('/api/terabox/direct', {
           method: 'POST',
@@ -710,21 +649,42 @@
           cache: 'no-store',
           body: JSON.stringify({ url })
         });
+        diag.status = response.status;
+        diag.statusText = response.statusText || '';
+        diag.contentType = response.headers.get('content-type') || '';
+        diag.rawBody = await response.text().catch(() => '(gagal baca body)');
+        try { diag.parsedJson = JSON.parse(diag.rawBody); } catch(e) { diag.parsedJson = null; }
+        diag.elapsedMs = Date.now() - reqStart;
+        const data = diag.parsedJson || {};
 
-        const data = await response.json().catch(() => ({}));
-        const _filesRaw = (Array.isArray(data.files) && data.files.length
-          ? data.files
-          : [{ filename: data.filename, size: null, dlink: data.dlink, thumb: data.thumb || null }]
-        );
-        if (!response.ok || !data.ok || !_filesRaw.length) {
-          const err = new Error(data.error || 'Gagal mendapatkan link download.');
-          err.detail = data.detail || null;
-          throw err;
+        // DIAGNOSTIC: tampilkan info response selalu
+        if (!response.ok) {
+          showDiagnostic(Object.assign({title:'DIAGNOSTIC ERROR', note:'HTTP tidak OK'}, diag));
+          return;
+        }
+        if (!data.ok) {
+          showDiagnostic(Object.assign({title:'DIAGNOSTIC ERROR', note:'ok=false dari backend'}, diag));
+          return;
+        }
+        // Folder valid: isdir=1 + dlink=null BUKAN error
+        const filesRaw = Array.isArray(data.files) ? data.files : [];
+        const hasFolders = filesRaw.some(f => f && f.isdir == 1);
+        if (data.dlink) {
+          // lanjut normal (file tunggal)
+        } else if (hasFolders || filesRaw.length > 0) {
+          // Tampilkan daftar folder/file apa adanya (diagnostic sukses)
+          showDiagnostic(Object.assign({title:'DIAGNOSTIC SUCCESS', note: filesRaw.length + ' item diterima (termasuk folder)'}, diag));
+        } else {
+          showDiagnostic(Object.assign({title:'DIAGNOSTIC ERROR', note:'tidak ada dlink dan tidak ada files'}, diag));
+          return;
         }
         // Simpan data HLS untuk streaming via hls.js
         window._hlsData = data.hls || null;
 
-        const files = _filesRaw.filter((f) => f && (f.dlink || Number(f.isdir || 0) === 1));
+        const files = (Array.isArray(data.files) && data.files.length
+          ? data.files
+          : [{ filename: data.filename, size: null, dlink: data.dlink, thumb: data.thumb || null }]
+        ).filter((f) => f && f.dlink);
         if (!files.length) {
           throw new Error('Tidak ada link download yang berhasil diekstrak.');
         }
@@ -737,7 +697,9 @@
         submitBtn.disabled = false;
         btnLabel.textContent = 'Dapatkan Link';
       } catch (error) {
-        showError(error.message || 'Terjadi kesalahan jaringan.', error.detail || null);
+        diag.elapsedMs = Date.now() - reqStart;
+        diag.rawBody = 'EXCEPTION: ' + (error && error.stack ? error.stack : String(error));
+        showDiagnostic(Object.assign({title:'DIAGNOSTIC EXCEPTION', note: error.message || 'fetch gagal'}, diag));
       }
     });
 
