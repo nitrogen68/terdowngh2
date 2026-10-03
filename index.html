@@ -297,12 +297,116 @@
       return wrap;
     }
 
+    // ---------- Cache folder di localStorage (hemat token Browserless) ----------
+    // Setiap view folder yang pernah dibuka disimpan: key = shareUrl|path.
+    // Tombol kembali & buka-ulang folder pakai cache ini, tanpa fetch ke backend.
+    const FOLDER_CACHE_KEY = 'terdowngh-folder-cache-v1';
+    const FOLDER_CACHE_TTL_MS = 30 * 60 * 1000; // 30 menit (dlink Terabox bersifat sementara)
+    const FOLDER_CACHE_MAX = 50; // maks entri, yang tertua dibuang
+    let folderCache = {};
+    let navStack = []; // [{path, title, items}] riwayat navigasi untuk tombol kembali
+
+    function folderCacheKey(shareUrl, path) { return String(shareUrl || '') + '|' + String(path || ''); }
+    function loadFolderCache() {
+      try {
+        const raw = localStorage.getItem(FOLDER_CACHE_KEY);
+        if (!raw) return;
+        const data = JSON.parse(raw) || {};
+        const now = Date.now();
+        folderCache = {};
+        let n = 0;
+        for (const k of Object.keys(data)) {
+          const e = data[k];
+          if (e && e.ts && (now - e.ts) < FOLDER_CACHE_TTL_MS && Array.isArray(e.items) && n < FOLDER_CACHE_MAX) {
+            folderCache[k] = e; n++;
+          }
+        }
+      } catch (e) { folderCache = {}; }
+    }
+    function saveFolderCache() {
+      try {
+        const keys = Object.keys(folderCache);
+        if (keys.length > FOLDER_CACHE_MAX) {
+          keys.sort((a, b) => (folderCache[a].ts || 0) - (folderCache[b].ts || 0));
+          for (const k of keys.slice(0, keys.length - FOLDER_CACHE_MAX)) delete folderCache[k];
+        }
+        localStorage.setItem(FOLDER_CACHE_KEY, JSON.stringify(folderCache));
+      } catch (e) {}
+    }
+    function getCachedFolder(shareUrl, path) {
+      const k = folderCacheKey(shareUrl, path);
+      const e = folderCache[k];
+      if (!e) return null;
+      if ((Date.now() - e.ts) < FOLDER_CACHE_TTL_MS) return e;
+      delete folderCache[k]; saveFolderCache();
+      return null;
+    }
+    function setCachedFolder(shareUrl, path, items, title) {
+      folderCache[folderCacheKey(shareUrl, path)] = { items: items, title: title, ts: Date.now() };
+      saveFolderCache();
+    }
+    function goBack() {
+      // Kembali tanpa fetch: pakai view yang tersimpan di navStack
+      if (navStack.length) {
+        const prev = navStack.pop();
+        currentPath = prev.path || '';
+        window._currentFiles = Array.isArray(prev.items) ? prev.items : [];
+        renderFiles(window._currentFiles);
+        resultTitle.textContent = prev.title || '';
+        result.classList.remove('hidden');
+        errorBox.classList.add('hidden');
+        submitBtn.disabled = false;
+        btnLabel.textContent = 'Dapatkan Link';
+        stopLoadingTimer();
+        if (!navStack.length) hideBackButton();
+        return;
+      }
+      currentPath = '';
+      document.getElementById('submitBtn').click();
+    }
+    function ensureBackButton() {
+      let backBtn = document.getElementById('backBtn');
+      if (!backBtn) {
+        backBtn = document.createElement('button');
+        backBtn.id = 'backBtn';
+        backBtn.type = 'button';
+        backBtn.className = 'mb-3 px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-sm font-medium';
+        backBtn.textContent = '← Kembali';
+        backBtn.onclick = goBack;
+        result.insertBefore(backBtn, result.firstChild);
+      }
+      backBtn.classList.remove('hidden');
+    }
+    function hideBackButton() {
+      const b = document.getElementById('backBtn');
+      if (b) b.classList.add('hidden');
+    }
+    loadFolderCache();
+
     let currentShareUrl = '';
     let currentPath = '';
     async function openFolder(folder) {
       const path = folder.path || '';
       if (!path) { showDiagnostic({title:'ERROR', note:'Folder tidak memiliki path', rawBody:JSON.stringify(folder)}); return; }
+      // Simpan view saat ini ke riwayat, agar tombol kembali tidak perlu fetch ulang
+      // (hindari double-push saat double-click kartu yang sama)
+      const lastNav = navStack[navStack.length - 1];
+      if (Array.isArray(window._currentFiles) && window._currentFiles.length &&
+          (!lastNav || lastNav.path !== currentPath)) {
+        navStack.push({ path: currentPath, title: resultTitle.textContent, items: window._currentFiles });
+      }
       currentPath = path;
+      // Cek cache dulu — hemat token Browserless
+      const cached = getCachedFolder(currentShareUrl, path);
+      if (cached) {
+        window._currentFiles = cached.items;
+        renderFiles(cached.items);
+        resultTitle.textContent = cached.title || ('📁 ' + (folder.filename || 'Folder') + ' (' + cached.items.length + ' item)');
+        result.classList.remove('hidden');
+        errorBox.classList.add('hidden');
+        ensureBackButton();
+        return;
+      }
       setLoading(true);
       btnLabel.textContent = 'Membuka folder...';
       const reqStart = Date.now();
@@ -320,20 +424,14 @@
             filename: ff.filename || 'Item', size: ff.size || null, dlink: ff.dlink || null,
             thumb: ff.thumb || null, isdir: ff.isdir || 0, path: ff.path || '', fs_id: ff.fs_id || ''
           }));
+          const folderTitle = '📁 ' + (folder.filename || 'Folder') + ' (' + items.length + ' item)';
+          window._currentFiles = items;
+          setCachedFolder(currentShareUrl, path, items, folderTitle);
           renderFiles(items);
-          resultTitle.textContent = '📁 ' + (folder.filename || 'Folder') + ' (' + items.length + ' item)';
+          resultTitle.textContent = folderTitle;
           result.classList.remove('hidden');
-          // Tombol kembali
-          let backBtn = document.getElementById('backBtn');
-          if (!backBtn) {
-            backBtn = document.createElement('button');
-            backBtn.id = 'backBtn';
-            backBtn.className = 'mb-3 px-4 py-2 rounded-lg bg-slate-200 dark:bg-slate-700 text-sm font-medium';
-            backBtn.textContent = '← Kembali';
-            backBtn.onclick = () => { currentPath=''; document.getElementById('submitBtn').click(); };
-            result.insertBefore(backBtn, result.firstChild);
-          }
-          backBtn.classList.remove('hidden');
+          // Tombol kembali (pakai cache, tanpa fetch ulang)
+          ensureBackButton();
         } else {
           showDiagnostic({title:'FOLDER ERROR', note:'Gagal membuka folder', rawBody:JSON.stringify(data).slice(0,2000), elapsedMs: Date.now()-reqStart, status: resp.status});
         }
@@ -696,6 +794,20 @@
       setLoading(true);
       currentShareUrl = url;
 
+      // Root view pernah dibuka & masih fresh? Render dari cache, tanpa panggil Browserless.
+      const cachedRoot = getCachedFolder(url, '');
+      if (cachedRoot) {
+        setLoading(false);
+        navStack = [];
+        window._currentFiles = cachedRoot.items;
+        renderFiles(cachedRoot.items);
+        resultTitle.textContent = cachedRoot.title;
+        result.classList.remove('hidden');
+        errorBox.classList.add('hidden');
+        hideBackButton();
+        return;
+      }
+
       const reqStart = Date.now();
       let diag = { status: undefined, statusText: '', contentType: '', rawBody: '', parsedJson: null };
       try {
@@ -745,8 +857,12 @@
               }));
               // Simpan untuk navigasi folder
               window._currentFiles = itemsToRender;
+              const rootTitle = itemsToRender.length + ' Folder Ditemukan';
+              setCachedFolder(url, '', itemsToRender, rootTitle);
+              navStack = [];
               renderFiles(itemsToRender);
-              resultTitle.textContent = itemsToRender.length + ' Folder Ditemukan';
+              resultTitle.textContent = rootTitle;
+              hideBackButton();
               result.classList.remove('hidden');
             }
           } catch(e) {}
@@ -801,6 +917,8 @@
 
     document.getElementById('resetBtn').addEventListener('click', () => {
       form.reset();
+      navStack = [];
+      hideBackButton();
       result.classList.add('hidden');
       errorBox.classList.add('hidden');
       loading.classList.add('hidden');
