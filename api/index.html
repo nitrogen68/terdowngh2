@@ -345,6 +345,7 @@
     function renderFiles(files) {
       fileList.innerHTML = '';
       files.forEach((f) => {
+        const isFolder = f.isdir == 1;
         const kind = fileKind(f.filename);
 
         const card = document.createElement('div');
@@ -385,7 +386,6 @@
           (kind === 'video' ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
             : kind === 'audio' ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-700 dark:text-violet-300'
             : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400');
-        const isFolder = f.isdir == 1;
         kindBadge.textContent = isFolder ? '📁 Folder' : kind === 'video' ? 'Video' : kind === 'audio' ? 'Audio' : kind === 'image' ? 'Gambar' : 'File';
         if (isFolder) {
           kindBadge.className = 'text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300';
