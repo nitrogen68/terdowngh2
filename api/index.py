@@ -12,6 +12,10 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
 from terabox_browseruse import get_terabox_dlink
 
 
+# --- Messenger webhook (Terastream) ---
+MESSENGER_VERIFY_TOKEN = "TsVrf_jjEAyMqaUK7BxsWb1Wl5S9mEFtjFrrzw"
+
+
 class Handler(BaseHTTPRequestHandler):
     def _json(self, obj, code=200):
         data = json.dumps(obj, ensure_ascii=False).encode("utf-8")
@@ -67,6 +71,22 @@ class Handler(BaseHTTPRequestHandler):
             return
         if path == "/api/hls-chunk":
             self._proxy_hls_chunk()
+            return
+        if path in ("/webhook", "/api/webhook"):
+            # Verifikasi webhook Messenger (Meta kirim hub.challenge)
+            qs = parse_qs(urlparse(self.path).query)
+            mode = (qs.get("hub.mode") or [None])[0]
+            token = (qs.get("hub.verify_token") or [None])[0]
+            challenge = (qs.get("hub.challenge") or [None])[0]
+            if mode == "subscribe" and token == MESSENGER_VERIFY_TOKEN and challenge:
+                data = challenge.encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/plain")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            self._json({"error": "verification failed"}, 403)
             return
         self._json({"error": "not found"}, 404)
 
@@ -152,6 +172,16 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         path = self.path.split("?")[0]
+        if path in ("/webhook", "/api/webhook"):
+            # Terima event Messenger (Phase 1: acknowledge; Phase 2: auto-reply)
+            try:
+                length = int(self.headers.get("Content-Length", 0))
+                body = json.loads(self.rfile.read(length)) if length else {}
+            except Exception:
+                body = {}
+            # TODO Phase 2: proses messaging events & balas via Send API
+            self._json({"status": "EVENT_RECEIVED"})
+            return
         if path not in ("/api/terabox/direct", "/api/terabox/direct/"):
             self._json({"error": "not found"}, 404)
             return
