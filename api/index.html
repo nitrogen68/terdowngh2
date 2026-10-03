@@ -319,8 +319,37 @@
 
     // Download via HLS chunks (lolos 31045): ambil semua segmen via proxy,
     // gabung jadi satu file .ts yang bisa diputar.
+    // URL share disimpan untuk fetch HLS per-file bila diperlukan.
+    let currentShareUrl = '';
+
+    // Ambil data HLS untuk file tertentu. Pakai cache bila fid cocok,
+    // jika tidak fetch ke backend dengan fid file tersebut.
+    async function getHlsForFile(file) {
+      const cached = window._hlsData;
+      if (cached && cached.fid && file && file.fs_id &&
+          String(cached.fid) === String(file.fs_id) &&
+          Array.isArray(cached.chunks) && cached.chunks.length) {
+        return cached;
+      }
+      if (!file || !file.fs_id || !currentShareUrl) return cached;
+      try {
+        const resp = await fetch('/api/terabox/direct', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
+          body: JSON.stringify({ url: currentShareUrl, fid: String(file.fs_id) })
+        });
+        const data = await resp.json().catch(() => ({}));
+        if (data && data.ok && data.hls && Array.isArray(data.hls.chunks) && data.hls.chunks.length) {
+          window._hlsData = data.hls;
+          return data.hls;
+        }
+      } catch (_) { /* fallback ke cache */ }
+      return cached;
+    }
+
     async function downloadViaHls(file, btn) {
-      const hlsData = window._hlsData;
+      const hlsData = await getHlsForFile(file);
       if (!hlsData || !Array.isArray(hlsData.chunks) || !hlsData.chunks.length) return false;
       const origLabel = btn.textContent;
       try {
@@ -391,7 +420,7 @@
       return URL.createObjectURL(blob);
     }
 
-    function openStream(file) {
+    async function openStream(file) {
       streamFile = file;
       streamRetried = false;
       streamTitle.textContent = file.filename || 'Streaming';
@@ -400,9 +429,10 @@
       streamModal.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
       const modeEl = document.getElementById('streamMode');
-      if (modeEl) modeEl.textContent = '';
+      if (modeEl) modeEl.textContent = 'Memuat stream...';
       // Prioritas 1: HLS via /share/streaming (jalur resmi, lolos 31045)
-      const hlsData = window._hlsData;
+      // Ambil HLS khusus untuk file ini (bukan cache file pertama).
+      const hlsData = await getHlsForFile(file);
       const hlsUrl = buildHlsBlobUrl(hlsData);
       if (hlsUrl) {
         if (window.Hls && Hls.isSupported()) {
@@ -478,6 +508,7 @@
       }
 
       setLoading(true);
+      currentShareUrl = url;
 
       try {
         const response = await fetch('/api/terabox/direct', {
