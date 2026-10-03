@@ -528,11 +528,15 @@
 
     // Ambil data HLS untuk file tertentu. Pakai cache bila fid cocok,
     // jika tidak fetch ke backend dengan fid file tersebut.
-    async function getHlsForFile(file) {
+    async function getHlsForFile(file, forceFresh) {
       const cached = window._hlsData;
-      if (cached && cached.fid && file && file.fs_id &&
+      // URL chunk HLS bertanda tangan & bisa kedaluwarsa: cache >15 menit dianggap basi.
+      const HLS_TTL_MS = 15 * 60 * 1000;
+      const cacheFresh = cached && cached.fid && file && file.fs_id &&
           String(cached.fid) === String(file.fs_id) &&
-          Array.isArray(cached.chunks) && cached.chunks.length) {
+          Array.isArray(cached.chunks) && cached.chunks.length &&
+          cached._ts && (Date.now() - cached._ts) < HLS_TTL_MS;
+      if (cacheFresh && !forceFresh) {
         return cached;
       }
       if (!file || !file.fs_id || !currentShareUrl) return cached;
@@ -545,6 +549,7 @@
         });
         const data = await resp.json().catch(() => ({}));
         if (data && data.ok && data.hls && Array.isArray(data.hls.chunks) && data.hls.chunks.length) {
+          data.hls._ts = Date.now();
           window._hlsData = data.hls;
           return data.hls;
         }
@@ -639,6 +644,7 @@
 
     let streamFile = null;
     let streamRetried = false;
+    let streamHlsRefreshed = false; // sudah coba refresh HLS sekali?
     let hlsInstance = null;
 
     function showStreamLoading(sub) {
@@ -676,6 +682,7 @@
     async function openStream(file) {
       streamFile = file;
       streamRetried = false;
+      streamHlsRefreshed = false;
       streamTitle.textContent = file.filename || 'Streaming';
       streamError.classList.add('hidden');
       streamError.textContent = '';
@@ -692,9 +699,9 @@
       if (modeEl) modeEl.textContent = 'Menyiapkan stream...';
       // Prioritas 1: HLS via /share/streaming (jalur resmi, lolos 31045)
       // Ambil HLS khusus untuk file ini (bukan cache file pertama).
-      const hlsData = await getHlsForFile(file);
-      const hlsUrl = buildHlsBlobUrl(hlsData);
-      if (hlsUrl) {
+      async function attachHls(hlsData, isRetry) {
+        const hlsUrl = buildHlsBlobUrl(hlsData);
+        if (!hlsUrl) return false;
         if (window.Hls && Hls.isSupported()) {
           try {
             if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
@@ -702,27 +709,48 @@
             hlsInstance = hls;
             hls.on(Hls.Events.ERROR, function (ev, data) {
               if (data && data.fatal) {
-                // Fallback ke dlink langsung bila HLS fatal error
                 try { hls.destroy(); } catch (_) {}
                 hlsInstance = null;
-                streamVideo.src = file.dlink;
-                streamVideo.load();
-                streamVideo.play().catch(() => {});
+                onHlsFatal(hlsData);
               }
             });
             hls.loadSource(hlsUrl);
-            if (modeEl) modeEl.textContent = 'Mode: HLS (' + (hlsData.chunks.length) + ' segmen via proxy)';
+            if (modeEl) modeEl.textContent = 'Mode: HLS (' + (hlsData.chunks.length) + ' segmen via proxy)' + (isRetry ? ' (refresh)' : '');
             hls.attachMedia(streamVideo);
             streamVideo.play().catch(() => {});
-            return;
-          } catch (_) { /* jatuh ke fallback */ }
+            return true;
+          } catch (_) { return false; }
         } else if (streamVideo.canPlayType('application/vnd.apple.mpegurl')) {
           // Safari: HLS native
           streamVideo.src = hlsUrl;
           streamVideo.play().catch(() => {});
-          return;
+          return true;
         }
+        return false;
       }
+      async function onHlsFatal(oldData) {
+        // URL chunk lama mungkin kedaluwarsa: coba sekali ambil HLS fresh dari backend
+        if (!streamHlsRefreshed && file) {
+          streamHlsRefreshed = true;
+          showStreamLoading('Memperbarui stream...');
+          try {
+            const fresh = await getHlsForFile(file, true);
+            hideStreamLoading();
+            if (fresh && fresh._ts && (!oldData || !oldData._ts || fresh._ts !== oldData._ts)) {
+              if (await attachHls(fresh, true)) return;
+            }
+          } catch (_) { /* lanjut ke fallback */ }
+          hideStreamLoading();
+        }
+        // Fallback ke dlink langsung bila HLS tetap gagal
+        if (modeEl) modeEl.textContent = 'Mode: direct link (fallback)';
+        streamVideo.setAttribute('referrerpolicy', 'no-referrer');
+        streamVideo.src = file.dlink;
+        streamVideo.load();
+        streamVideo.play().catch(() => {});
+      }
+      const hlsData = await getHlsForFile(file);
+      if (await attachHls(hlsData, false)) return;
       if (modeEl) modeEl.textContent = 'Mode: direct link (fallback)';
       // Prioritas 2 (fallback): dlink langsung (cara lama)
       // Coba tanpa Referer dulu: banyak CDN memblokir hotlink dari domain
@@ -875,7 +903,8 @@
           showDiagnostic(Object.assign({title:'DIAGNOSTIC ERROR', note:'tidak ada dlink dan tidak ada files'}, diag));
           return;
         }
-        // Simpan data HLS untuk streaming via hls.js
+        // Simpan data HLS untuk streaming via hls.js (dengan timestamp anti-kedaluwarsa)
+        if (data.hls) data.hls._ts = Date.now();
         window._hlsData = data.hls || null;
 
         const files = (Array.isArray(data.files) && data.files.length
