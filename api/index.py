@@ -110,6 +110,8 @@ class Handler(BaseHTTPRequestHandler):
             payload["dlink_probe"] = result["dlink_probe"]
         if "dlink_probe_clean" in result:
             payload["dlink_probe_clean"] = result["dlink_probe_clean"]
+        if "hls" in result:
+            payload["hls"] = result["hls"]
 
         self._json(payload)
 
