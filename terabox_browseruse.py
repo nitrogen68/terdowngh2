@@ -580,6 +580,16 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
     dlink = _extract_dlink(result)
     if files:
         rdata = result.get("data", {}) if isinstance(result, dict) else {}
+        # Fallback: jika ada file tanpa fs_id tapi namanya cocok dengan HLS,
+        # pakai fid dari HLS info.
+        hls_data = rdata.get("hls") or {}
+        hls_fid = hls_data.get("fid")
+        hls_fn = hls_data.get("filename")
+        if hls_fid:
+            for f in files:
+                if not f.get("fs_id") and hls_fn and f.get("filename") == hls_fn:
+                    f["fs_id"] = str(hls_fid)
+                    break
         return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename"), "ndus_cookie_ok": rdata.get("ndusCookieOk"), "dlink_probe": rdata.get("dlinkProbe"), "dlink_probe_clean": rdata.get("dlinkProbeClean"), "hls": rdata.get("hls")}
     if dlink:
         return {"success": True, "dlink": dlink, "files": [{"filename": "file", "dlink": dlink}]}
