@@ -32,11 +32,16 @@ def _record_webhook_hit(body):
             entries = body.get("entry") or []
             info["entries"] = len(entries)
             n_msg = 0
+            n_feed = 0
             for e in entries:
                 for ev in (e.get("messaging") or []):
                     if isinstance(ev, dict) and ev.get("message"):
                         n_msg += 1
+                for ch in (e.get("changes") or []):
+                    if isinstance(ch, dict) and ch.get("field") == "feed":
+                        n_feed += 1
             info["messages"] = n_msg
+            info["feed_changes"] = n_feed
         else:
             info["object"] = None
         _webhook_hits.append(info)
@@ -72,6 +77,54 @@ def _extract_terabox_url(text):
     """Cari URL Terabox/1024terabox/mirrobox di teks pesan."""
     m = re.search(r"https?://[^\s]*?(?:terabox|1024terabox|mirrobox|teraboxapp)[^\s]*", text or "", re.I)
     return m.group(0) if m else None
+
+
+def _reply_to_comment(comment_id, text):
+    """Balas komentar Facebook via Graph API. Token dari env MESSENGER_PAGE_TOKEN."""
+    token = (os.environ.get("MESSENGER_PAGE_TOKEN") or "").strip()
+    if not token or not comment_id or not text:
+        return False
+    payload = json.dumps({"message": text[:2000]}).encode("utf-8")
+    try:
+        req = urlrequest.Request(
+            f"https://graph.facebook.com/v18.0/{comment_id}/comments?access_token=" + token,
+            data=payload,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlrequest.urlopen(req, timeout=15) as r:
+            return r.status == 200
+    except Exception:
+        return False
+
+
+def _handle_feed_event(body):
+    """Proses event webhook feed: balas komentar yang berisi link Terabox / tag halaman."""
+    if not isinstance(body, dict) or body.get("object") != "page":
+        return
+    for entry in body.get("entry", []) or []:
+        for change in entry.get("changes", []) or []:
+            if change.get("field") != "feed":
+                continue
+            val = change.get("value") or {}
+            if val.get("item") != "comment" or val.get("verb") != "add":
+                continue
+            comment_id = val.get("comment_id")
+            msg = val.get("message") or ""
+            from_id = (val.get("from") or {}).get("id")
+            if not comment_id or not msg:
+                continue
+            url = _extract_terabox_url(msg)
+            if url:
+                _reply_to_comment(comment_id,
+                    "Siap! Link-nya lagi diproses... 🚀\n"
+                    "Hasil lengkapnya aku kirim via chat ya — buka Messenger & chat ke halaman ini. 📩")
+                # Kirim hasil via Messenger juga bila memungkinkan (private reply butuh izin tambahan;
+                # untuk sekarang arahkan ke chat).
+                continue
+            # Komentar tanpa link (mis. tag halaman): sapa singkat.
+            _reply_to_comment(comment_id,
+                "Halo! 👋 Kirim link Terabox di sini atau via chat, nanti aku ambilkan daftar file-nya. 🚀")
 
 
 def _handle_messenger_event(body):
@@ -297,6 +350,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json({"status": "EVENT_RECEIVED"})
             try:
                 _handle_messenger_event(body)
+            except Exception:
+                pass
+            try:
+                _handle_feed_event(body)
             except Exception:
                 pass
             return
