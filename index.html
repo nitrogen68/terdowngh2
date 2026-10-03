@@ -396,9 +396,10 @@
       try {
         if (ui && ui.btn) ui.btn.disabled = true;
         const chunks = hlsData.chunks;
-        const parts = [];
-        for (let i = 0; i < chunks.length; i++) {
-          setProgress(i, chunks.length);
+        const parts = new Array(chunks.length);
+        let completed = 0;
+        const CONCURRENCY = 6; // download paralel agar jauh lebih cepat
+        async function fetchOne(i) {
           const enc = btoa(chunks[i].url).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
           const chunkUrl = window.location.origin + "/api/hls-chunk?u=" + enc;
           let buf = null;
@@ -414,7 +415,14 @@
               await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
             }
           }
-          parts.push(buf);
+          parts[i] = buf;
+          completed++;
+          setProgress(completed, chunks.length);
+        }
+        for (let s = 0; s < chunks.length; s += CONCURRENCY) {
+          const batch = [];
+          for (let i = s; i < Math.min(s + CONCURRENCY, chunks.length); i++) batch.push(fetchOne(i));
+          await Promise.all(batch);
         }
         setProgress(chunks.length, chunks.length, 'merge');
         const blob = new Blob(parts, { type: "video/mp2t" });
