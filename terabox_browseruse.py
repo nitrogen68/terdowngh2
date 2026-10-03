@@ -109,12 +109,24 @@ def _extract_files(value):
             for item in obj:
                 walk(item)
     walk(value)
-    seen, out = set(), []
+    # Dedup berdasarkan dlink, tapi MERGE metadata dari semua kemunculan —
+    # pilih nilai terlengkap (nama terpanjang, ada size/thumb/fs_id).
+    merged = {}
+    order = []
     for f in files:
-        if f["dlink"] not in seen:
-            seen.add(f["dlink"])
-            out.append(f)
-    return out
+        dl = f["dlink"]
+        if dl not in merged:
+            merged[dl] = dict(f)
+            order.append(dl)
+        else:
+            cur = merged[dl]
+            # filename: pilih yang terpanjang (lebih lengkap)
+            if f.get("filename") and len(str(f["filename"])) > len(str(cur.get("filename") or "")):
+                cur["filename"] = f["filename"]
+            for k in ("size", "thumb", "list_dlink", "fs_id"):
+                if not cur.get(k) and f.get(k):
+                    cur[k] = f[k]
+    return [merged[dl] for dl in order]
 
 
 def _http_get_json(url: str, timeout: int = 25):
