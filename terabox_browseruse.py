@@ -237,7 +237,7 @@ async def get_terabox_dlink(share_url: str, fid: str = None, path: str = None) -
         }
       }
       await page.goto(shareUrl, { waitUntil: "networkidle2", timeout: 45000 }).catch(() => page.goto(shareUrl, { waitUntil: "domcontentloaded", timeout: 30000 }));
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 3500));
       captured.ndusCookieOk = false;
       try {
         const ck1 = await page.evaluate(() => document.cookie || "");
