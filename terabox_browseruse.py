@@ -530,7 +530,9 @@ async def get_terabox_dlink(share_url: str, fid: str = None, path: str = None) -
         const targetFid = __FID__;
         const vfile = (targetFid && files.find(f => String(f.fs_id) === String(targetFid)))
           || files.find(f => /\.(mp4|mkv|avi|mov|webm|m4v)$/i.test(String(f.server_filename || f.filename || ""))) || files[0];
-        if (vfile && vfile.fs_id && uk && shareId && sign && timestamp) {
+        // Skip HLS untuk folder (tidak ada video yang bisa di-streaming)
+        const vfileIsDir = vfile && Number(vfile.isdir || 0) === 1;
+        if (vfile && !vfileIsDir && vfile.fs_id && uk && shareId && sign && timestamp) {
           const chunkMap = new Map();
           let hlsErr = null;
           let hlsType = null;
