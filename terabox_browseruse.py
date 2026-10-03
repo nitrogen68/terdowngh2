@@ -98,9 +98,11 @@ def _extract_files(value):
                         cand = th.get("url3") or th.get("url2") or th.get("url1")
                         thumb = cand if isinstance(cand, str) else None
                 ld = obj.get("downloadDlink") or obj.get("listDlink")
+                fs_id = obj.get("fs_id") or obj.get("fsId") or obj.get("fid")
                 files.append({"filename": name, "size": size, "dlink": dlink,
                               "thumb": thumb if isinstance(thumb, str) else None,
-                              "list_dlink": ld if isinstance(ld, str) else None})
+                              "list_dlink": ld if isinstance(ld, str) else None,
+                              "fs_id": str(fs_id) if fs_id else None})
             for v in obj.values():
                 walk(v)
         elif isinstance(obj, list):
