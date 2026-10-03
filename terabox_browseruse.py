@@ -363,10 +363,10 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
       const timestamp = info.timestamp;
       if (!shareId || !uk || !sign || !timestamp) {
         const results = [];
-        for (const f of files) if (f.dlink) results.push({ filename: f.server_filename || "file", size: f.size, dlink: f.dlink, thumb: pickThumb(f) });
+        for (const f of files) if (f.dlink) results.push({ filename: f.server_filename || "file", size: f.size, dlink: f.dlink, thumb: pickThumb(f), fs_id: String(f.fs_id || "") });
         for (const dr of captured.downloadResponses) {
           const lst = Array.isArray(dr.data?.list) ? dr.data.list : [];
-          for (const item of lst) if (item.dlink) results.push({ filename: item.server_filename || "file", size: item.size, dlink: item.dlink, thumb: pickThumb(item) });
+          for (const item of lst) if (item.dlink) results.push({ filename: item.server_filename || "file", size: item.size, dlink: item.dlink, thumb: pickThumb(item), fs_id: String(item.fs_id || "") });
           if (typeof dr.data?.dlink === "string") results.push({ filename: "file", size: null, dlink: dr.data.dlink, thumb: null });
         }
         if (results.length) return { data: { dlink: results[0].dlink, files: results, filename: results[0].filename }, type: "application/json" };
@@ -444,7 +444,7 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
         // /share/download hanya fallback.
         const dlink = listDlink || dlDlink;
         if (!dlink) continue;
-        const entry = { filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file) };
+        const entry = { filename: file.server_filename || file.filename || "file", size: file.size, dlink, thumb: pickThumb(file), fs_id: String(file.fs_id || "") };
         if (results.length === 0 && dlDlink && listDlink && dlDlink !== listDlink) entry.downloadDlink = dlDlink;
         results.push(entry);
       }
