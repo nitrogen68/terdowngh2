@@ -672,8 +672,33 @@
         if (data.dlink) {
           // lanjut normal (file tunggal)
         } else if (hasFolders || filesRaw.length > 0) {
-          // Tampilkan daftar folder/file apa adanya (diagnostic sukses)
-          showDiagnostic(Object.assign({title:'DIAGNOSTIC SUCCESS', note: filesRaw.length + ' item diterima (termasuk folder)'}, diag));
+          // Folder valid: render daftar folder, jangan anggap error
+          setLoading(false);
+          // Gunakan renderFiles yang sudah ada (mendukung isdir)
+          try {
+            if (typeof renderFiles === 'function') {
+              // Jangan filter dlink untuk folder
+              const itemsToRender = filesRaw.map(f => ({
+                filename: f.filename || 'Folder',
+                size: f.size || null,
+                dlink: f.dlink || null,
+                thumb: f.thumb || null,
+                isdir: f.isdir || 0,
+                path: f.path || '',
+                fs_id: f.fs_id || ''
+              }));
+              // Simpan untuk navigasi folder
+              window._currentFiles = itemsToRender;
+              renderFiles(itemsToRender);
+              resultTitle.textContent = itemsToRender.length + ' Folder Ditemukan';
+              result.classList.remove('hidden');
+            }
+          } catch(e) {}
+          showDiagnostic(Object.assign({title:'DIAGNOSTIC SUCCESS', note: filesRaw.length + ' folder ditampilkan di bawah. Scroll ke bawah untuk melihat daftar.'}, diag));
+          // Tampilkan juga hasil di bawah diagnostic
+          errorBox.classList.add('hidden');
+          result.classList.remove('hidden');
+          return;
         } else {
           showDiagnostic(Object.assign({title:'DIAGNOSTIC ERROR', note:'tidak ada dlink dan tidak ada files'}, diag));
           return;
