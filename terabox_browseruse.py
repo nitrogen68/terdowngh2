@@ -499,7 +499,7 @@ async def get_terabox_dlink(share_url: str, fid: str = None) -> dict:
       // sequence number yang benar dari #EXT-X-MEDIA-SEQUENCE + #EXTINF.
       let hlsInfo = null;
       try {
-        const targetFid = "__FID__";
+        const targetFid = __FID__;
         const vfile = (targetFid && files.find(f => String(f.fs_id) === String(targetFid)))
           || files.find(f => /\.(mp4|mkv|avi|mov|webm|m4v)$/i.test(String(f.server_filename || f.filename || ""))) || files[0];
         if (vfile && vfile.fs_id && uk && shareId && sign && timestamp) {
