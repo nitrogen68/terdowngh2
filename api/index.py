@@ -1,5 +1,8 @@
 import json
+import base64
 from http.server import BaseHTTPRequestHandler
+from urllib import request as urlrequest, error as urlerror
+from urllib.parse import urlparse, parse_qs
 import asyncio
 import os
 import sys
@@ -62,7 +65,73 @@ class Handler(BaseHTTPRequestHandler):
                 ndus = ndus.split("=", 1)[1].strip()
             self._json({"has_ndus": bool(ndus)})
             return
+        if path == "/api/hls-chunk":
+            self._proxy_hls_chunk()
+            return
         self._json({"error": "not found"}, 404)
+
+    def _proxy_hls_chunk(self):
+        """Proxy TS chunk dari CDN Terabox dengan cookie NDUS server-side."""
+        try:
+            qs = parse_qs(urlparse(self.path).query)
+            u_enc = (qs.get("u") or [None])[0]
+            if not u_enc:
+                self._json({"error": "missing u"}, 400)
+                return
+            # base64url decode (tambah padding bila perlu)
+            pad = "=" * (-len(u_enc) % 4)
+            chunk_url = base64.urlsafe_b64decode(u_enc + pad).decode("utf-8", "ignore")
+            if not chunk_url.startswith("https://"):
+                self._json({"error": "invalid url"}, 400)
+                return
+        except Exception:
+            self._json({"error": "bad u"}, 400)
+            return
+        ndus = (os.environ.get("TERABOX_NDUS") or "").strip()
+        if ndus.lower().startswith("ndus="):
+            ndus = ndus.split("=", 1)[1].strip()
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Referer": "https://www.terabox.com/",
+            "Accept": "*/*",
+        }
+        if ndus:
+            headers["Cookie"] = f"NDUS={ndus}"
+        range_h = self.headers.get("Range")
+        if range_h:
+            headers["Range"] = range_h
+        try:
+            req = urlrequest.Request(chunk_url, headers=headers, method="GET")
+            with urlrequest.urlopen(req, timeout=30) as resp:
+                data = resp.read()
+                ctype = resp.headers.get("Content-Type", "video/mp2t")
+                crange = resp.headers.get("Content-Range")
+                status = resp.getcode()
+        except urlerror.HTTPError as exc:
+            try:
+                data = exc.read()
+            except Exception:
+                data = b""
+            self.send_response(exc.code)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        except Exception as exc:
+            self._json({"error": f"proxy failed: {exc}"}, 502)
+            return
+        self.send_response(status)
+        self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
+        self.send_header("Accept-Ranges", "bytes")
+        if crange:
+            self.send_header("Content-Range", crange)
+        self.send_header("Cache-Control", "public, max-age=3600")
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.end_headers()
+        self.wfile.write(data)
 
     def do_POST(self):
         path = self.path.split("?")[0]
