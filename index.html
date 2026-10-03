@@ -6,6 +6,7 @@
   <meta name="cache-version" content="2026-10-03-stream-noreferer">
   <title>TerDowngh — Terabox Direct Downloader</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
   <script>
     tailwind.config = { darkMode: 'class' };
     // Tema default: gelap. Pilihan user disimpan di localStorage.
@@ -316,6 +317,26 @@
 
     let streamFile = null;
     let streamRetried = false;
+    let hlsInstance = null;
+
+    // Bangun playlist M3U8 dari data chunks backend, dengan URL chunk
+    // yang di-proxy via /api/hls-chunk (agar cookie NDUS terpasang server-side).
+    function buildHlsBlobUrl(hlsData) {
+      if (!hlsData || !Array.isArray(hlsData.chunks) || !hlsData.chunks.length) return null;
+      const chunks = hlsData.chunks;
+      const maxDur = Math.ceil(Math.max.apply(null, chunks.map(function (c) { return c.dur || 10; })));
+      let m3u8 = "#EXTM3U\n#EXT-X-VERSION:3\n";
+      m3u8 += "#EXT-X-TARGETDURATION:" + maxDur + "\n";
+      m3u8 += "#EXT-X-MEDIA-SEQUENCE:" + (chunks[0].seq || 0) + "\n";
+      for (const c of chunks) {
+        const enc = btoa(c.url).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+        m3u8 += "#EXTINF:" + (c.dur || 10) + ",\n";
+        m3u8 += "/api/hls-chunk?u=" + enc + "\n";
+      }
+      m3u8 += "#EXT-X-ENDLIST\n";
+      const blob = new Blob([m3u8], { type: "application/vnd.apple.mpegurl" });
+      return URL.createObjectURL(blob);
+    }
 
     function openStream(file) {
       streamFile = file;
@@ -325,6 +346,38 @@
       streamError.textContent = '';
       streamModal.classList.remove('hidden');
       document.body.style.overflow = 'hidden';
+      // Prioritas 1: HLS via /share/streaming (jalur resmi, lolos 31045)
+      const hlsData = window._hlsData;
+      const hlsUrl = buildHlsBlobUrl(hlsData);
+      if (hlsUrl) {
+        if (window.Hls && Hls.isSupported()) {
+          try {
+            if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+            const hls = new Hls({ maxBufferLength: 60 });
+            hlsInstance = hls;
+            hls.on(Hls.Events.ERROR, function (ev, data) {
+              if (data && data.fatal) {
+                // Fallback ke dlink langsung bila HLS fatal error
+                try { hls.destroy(); } catch (_) {}
+                hlsInstance = null;
+                streamVideo.src = file.dlink;
+                streamVideo.load();
+                streamVideo.play().catch(() => {});
+              }
+            });
+            hls.loadSource(hlsUrl);
+            hls.attachMedia(streamVideo);
+            streamVideo.play().catch(() => {});
+            return;
+          } catch (_) { /* jatuh ke fallback */ }
+        } else if (streamVideo.canPlayType('application/vnd.apple.mpegurl')) {
+          // Safari: HLS native
+          streamVideo.src = hlsUrl;
+          streamVideo.play().catch(() => {});
+          return;
+        }
+      }
+      // Prioritas 2 (fallback): dlink langsung (cara lama)
       // Coba tanpa Referer dulu: banyak CDN memblokir hotlink dari domain
       // asing tapi mengizinkan request tanpa Referer.
       streamVideo.setAttribute('referrerpolicy', 'no-referrer');
@@ -334,6 +387,7 @@
 
     function closeStream() {
       streamVideo.pause();
+      try { if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; } } catch (_) {}
       streamVideo.removeAttribute('src');
       streamVideo.load();
       streamModal.classList.add('hidden');
@@ -384,6 +438,8 @@
         if (!response.ok || !data.ok || !data.dlink) {
           throw new Error(data.error || 'Gagal mendapatkan link download.');
         }
+        // Simpan data HLS untuk streaming via hls.js
+        window._hlsData = data.hls || null;
 
         const files = (Array.isArray(data.files) && data.files.length
           ? data.files
