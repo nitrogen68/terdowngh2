@@ -545,13 +545,21 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           cache: 'no-store',
-          body: JSON.stringify({ url: currentShareUrl, fid: String(file.fs_id) })
+          // path dikirim agar backend bisa drill ke folder lalu temukan file by fid
+          body: JSON.stringify({ url: currentShareUrl, fid: String(file.fs_id), path: (typeof currentPath !== 'undefined' ? currentPath : '') || '' })
         });
         const data = await resp.json().catch(() => ({}));
-        if (data && data.ok && data.hls && Array.isArray(data.hls.chunks) && data.hls.chunks.length) {
-          data.hls._ts = Date.now();
-          window._hlsData = data.hls;
-          return data.hls;
+        if (data && data.ok) {
+          // Refresh dlink juga (dlink lama dari cache bisa kedaluwarsa)
+          if (Array.isArray(data.files)) {
+            const freshFile = data.files.find(ff => String(ff.fs_id) === String(file.fs_id));
+            if (freshFile && freshFile.dlink) file.dlink = freshFile.dlink;
+          }
+          if (data.hls && Array.isArray(data.hls.chunks) && data.hls.chunks.length) {
+            data.hls._ts = Date.now();
+            window._hlsData = data.hls;
+            return data.hls;
+          }
         }
       } catch (_) { /* fallback ke cache */ }
       return cached;
