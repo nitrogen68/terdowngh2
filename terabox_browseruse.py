@@ -494,7 +494,66 @@ async def get_terabox_dlink(share_url: str) -> dict:
         }
       } catch (e) { dlinkProbeClean = { error: String(e && e.message || e).slice(0, 100) }; }
       debugLog.push({ step: "dlink_probe_clean", probe: dlinkProbeClean });
-      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, ndusCookieOk: !!captured.ndusCookieOk, dlinkProbe, dlinkProbeClean }, type: "application/json" };
+      // === HLS probe: /share/streaming adalah jalur RESMI klien untuk video.
+      // Kumpulkan chunk URLs (tiap request memberi subset acak) + tes 1 chunk.
+      let hlsInfo = null;
+      try {
+        const vfile = files.find(f => /\.(mp4|mkv|avi|mov|webm|m4v)$/i.test(String(f.server_filename || f.filename || ""))) || files[0];
+        if (vfile && vfile.fs_id && uk && shareId && sign && timestamp) {
+          const seen = new Set();
+          const chunkUrls = [];
+          let hlsErr = null;
+          let hlsType = null;
+          for (const st of ["M3U8_AUTO_360", "M3U8_FLV_264_480"]) {
+            for (let att = 0; att < 5 && chunkUrls.length < 15; att++) {
+              const su = new URL("/share/streaming", origin);
+              const sp = commonParams();
+              sp.set("uk", String(uk)); sp.set("shareid", String(shareId));
+              sp.set("type", st); sp.set("fid", String(vfile.fs_id));
+              sp.set("sign", String(sign)); sp.set("timestamp", String(timestamp));
+              sp.set("esl", "1"); sp.set("isplayer", "1"); sp.set("ehps", "1");
+              for (const [k, v] of sp.entries()) su.searchParams.set(k, v);
+              const sr = await page.evaluate(async (u, refUrl) => {
+                try {
+                  const resp = await fetch(u, { credentials: "include", headers: { "Accept": "*/*", "Referer": refUrl, "X-Requested-With": "XMLHttpRequest" } });
+                  const txt = await resp.text();
+                  return { status: resp.status, head: txt.slice(0, 4000) };
+                } catch (e) { return { error: String(e).slice(0, 100) }; }
+              }, su.toString(), currentUrl || shareUrl);
+              if (sr && sr.head && sr.head.includes("#EXTM3U")) {
+                hlsType = st;
+                for (const line of sr.head.split("\n")) {
+                  const t = line.trim();
+                  if (t && !t.startsWith("#") && t.length > 10) {
+                    const full = t.startsWith("http") ? t : (new URL(t, su.origin).toString());
+                    if (!seen.has(full)) { seen.add(full); chunkUrls.push(full); }
+                  }
+                }
+              } else if (sr && sr.head) {
+                try { const j = JSON.parse(sr.head); hlsErr = "errno " + j.errno; } catch (_) { hlsErr = "non-m3u8 status " + sr.status; }
+              } else if (sr && sr.error) {
+                hlsErr = sr.error;
+              }
+            }
+            if (chunkUrls.length > 0) break;
+          }
+          let chunkProbe = null;
+          if (chunkUrls.length > 0) {
+            const cu = chunkUrls[0];
+            chunkProbe = await page.evaluate(async (u, refUrl) => {
+              try {
+                const resp = await fetch(u, { credentials: "include", headers: { "Range": "bytes=0-1023", "Referer": refUrl } });
+                const buf = await resp.arrayBuffer();
+                const bytes = new Uint8Array(buf.slice(0, 4));
+                return { status: resp.status, bytes: buf.byteLength, ct: resp.headers.get("content-type"), magic: Array.from(bytes).map(b => b.toString(16).padStart(2, "0")).join("") };
+              } catch (e) { return { error: String(e).slice(0, 100) }; }
+            }, cu, currentUrl || shareUrl);
+          }
+          hlsInfo = { type: hlsType, chunks: chunkUrls.length, sampleChunk: chunkUrls[0] ? chunkUrls[0].slice(0, 90) : null, chunkProbe, error: hlsErr, fid: String(vfile.fs_id) };
+        }
+      } catch (e) { hlsInfo = { error: String(e && e.message || e).slice(0, 100) }; }
+      debugLog.push({ step: "hls", info: hlsInfo });
+      return { data: { dlink: results[0].dlink, filename: results[0].filename, files: results, ndusCookieOk: !!captured.ndusCookieOk, dlinkProbe, dlinkProbeClean, hls: hlsInfo }, type: "application/json" };
     };'''
     code = code.replace("__SHARE_URL__", safe_url).replace("__NDUS__", safe_ndus)
     try:
@@ -513,7 +572,7 @@ async def get_terabox_dlink(share_url: str) -> dict:
     dlink = _extract_dlink(result)
     if files:
         rdata = result.get("data", {}) if isinstance(result, dict) else {}
-        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename"), "ndus_cookie_ok": rdata.get("ndusCookieOk"), "dlink_probe": rdata.get("dlinkProbe"), "dlink_probe_clean": rdata.get("dlinkProbeClean")}
+        return {"success": True, "dlink": files[0]["dlink"], "files": files, "filename": files[0].get("filename"), "ndus_cookie_ok": rdata.get("ndusCookieOk"), "dlink_probe": rdata.get("dlinkProbe"), "dlink_probe_clean": rdata.get("dlinkProbeClean"), "hls": rdata.get("hls")}
     if dlink:
         return {"success": True, "dlink": dlink, "files": [{"filename": "file", "dlink": dlink}]}
     fb = _try_public_fallbacks(share_url)
